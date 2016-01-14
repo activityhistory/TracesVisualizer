@@ -1,0 +1,167 @@
+<html>
+<head>
+    <title>Traces Dayview</title>
+    <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/flick/jquery-ui.css">
+    <style type="text/css">
+        body{
+            font-family: 'helvetica neue', 'helvetica', sans-serif;
+            background-color: #22252D;
+            color: #DDD;
+        }
+
+        h1{
+            font-size: 2em;
+            font-weight: 300;
+        }
+
+        #datepicker{
+            padding: 5px 10px 5px;
+            margin: 0px 10px 10px 0px;
+            width: 250px;
+            float: left;
+            font-family: 'helvetica neue', 'helvetica', sans-serif;
+            font-size: 1.5em;
+            font-weight: 300;
+            background-color: #22252D;
+            color: #CCC;
+            border-width: 1px;
+            border-color: #666;
+            border-style: solid;
+        }
+
+        .axis text {
+            font: 12px sans-serif;
+            fill: #999;
+        }
+
+        .axis line{
+            fill: none;
+            stroke: #999;
+            shape-rendering: crispEdges;
+        }
+        .axis path {
+            display: none;
+        }
+
+        .timelineBackground{
+            fill: #BBB;
+            shape-rendering: crispEdges;
+        }
+
+        .bar{
+            stroke-width: 1px;
+            shape-rendering: crispEdges;
+        }
+    </style>
+</head>
+<body>
+    <input type="text" id="datepicker">
+    <p>Summary statistics can go up here</p>
+
+    <script type="text/javascript">
+        //set dimensions of the page
+        var m = [12, 12, 12, 12], //top right bottom left
+            w = window.innerWidth - m[1] - m[3], //replace with actual window width
+            h = 500 - m[0] - m[2], //replace with actual window height
+            barHeight = 24;
+
+        var timelineColors = ['#4394F7','#60B632','#EE7C15','#A24DDA','#F2CC20', '#E4454C']
+
+
+        //add the datepicker
+        $( "#datepicker" ).datepicker({dateFormat: "MM d, yy", onSelect: function(date) {
+            renderTimeline();}
+        });
+        $( "#datepicker" ).datepicker("setDate", "0");
+
+        //chart components
+        var chart = d3.select("body")
+                   .append("svg")
+                   .attr("width", w + m[1] + m[3])
+                   .attr("height", barHeight + m[0] + m[2])
+                   .attr("class", "chart");
+
+        var timeline = chart.append("g")
+                   .attr("width", w + m[1] + m[3])
+                   .attr("height", barHeight)
+                   .attr("class", "timeline");
+
+       var timelineBackground = timeline.append("rect")
+      			.attr("x", 0)
+      			.attr("y", 0)
+      			.attr("height", barHeight)
+      			.attr("width", w)
+                .attr('class', 'timelineBackground');
+
+        function renderTimeline(){
+            //get start and end time of day we are viewing
+            var selectedDate = $( "#datepicker" ).datepicker("getDate")
+            timeBegin = Date.parse(selectedDate)/1000.0 + selectedDate.getTimezoneOffset()*60.0
+            timeEnd = timeBegin + 24*60*60 //show one day of data
+
+            //scale
+            var x = d3.scale.linear()
+                   .domain([timeBegin, timeEnd])
+                   .range([0, w]);
+
+            d3.json("extract.json", function(error, json) {
+                if (error) return console.warn(error);
+
+                // get the data for today
+                data = json;
+                filteredData = data['appevents'].filter(function (el) {
+                    return (el.start <= timeEnd && el.start >= timeBegin) ||
+                    (el.end <= timeEnd && el.end >= timeBegin);
+                });
+
+        		//draw timeline
+                bars = timeline.selectAll(".bar")
+                    .data(filteredData)
+
+                bars.enter().append("rect")
+                    .attr("class", 'bar')
+                    .attr("x", function(d) {return x(d.start);})
+                    .attr("y", 0)
+                    .attr("width", function(d) {return x(timeBegin + d.end - d.start);})
+                    .attr("height", barHeight)
+                    .style("fill", function(d){return timelineColors[d.appid % 6]});
+
+                bars.exit().remove();
+
+                //draw the axis
+                var t1 = selectedDate,
+                    t2 = new Date(t1.getTime());
+                t2.setDate(t2.getDate() + 1);
+
+                var xScale = d3.time.scale()
+                    .domain([t1, t2])
+                    .range([0, w]);
+
+                var xAxis = d3.svg.axis()
+                    .scale(xScale)
+                    .orient("bottom");
+
+                d3.selectAll(".axis")
+                .remove()
+
+                chart.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + (barHeight + 2) + ")")
+                    .call(xAxis)
+                  .selectAll("text")
+                    .attr("y", 8)
+                    .attr("x", 0)
+                    .style("text-anchor", "center");
+
+
+            });
+        };
+
+        //Render the initial timeline
+        renderTimeline()
+    </script>
+</body>
+</html>
