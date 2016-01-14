@@ -1,3 +1,5 @@
+![Dayview](https://github.com/activityhistory/TracesVisualizer/images/dayview_v1.png)
+
 This repository currently holds test code for visualizing Traces data using Javascript. To visualize your own data, run `python extract.py` to generate a JSON file of your Traces data.
 
 Then run `python -m SimpleHTTPServer` to set up a basic HTTP server to handle reading the JSON data.
