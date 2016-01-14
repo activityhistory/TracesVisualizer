@@ -1,7 +1,5 @@
 This repository currently holds test code for visualizing Traces data using Javascript. To visualize your own data, run `python extract.py` to generate a JSON file of your Traces data.
 
-
-
 Then run `python -m SimpleHTTPServer` to set up a basic HTTP server to handle reading the JSON data.
 
 Finally, you can navigate to http://localhost:8000/dayview.html to see the Dayview representation of your data.
