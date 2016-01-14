@@ -1,4 +1,4 @@
-![Dayview](https://github.com/activityhistory/TracesVisualizer/images/dayview_v1.png)
+![Dayview](https://raw.githubusercontent.com/activityhistory/TracesVisualizer/master/images/dayview_v1.png)
 
 This repository currently holds test code for visualizing Traces data using Javascript. To visualize your own data, run `python extract.py` to generate a JSON file of your Traces data.
 
