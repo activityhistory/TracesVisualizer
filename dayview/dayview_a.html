@@ -27,7 +27,7 @@
             background-color: white;
             color: gray;
             border-width: 1px;
-            border-color: white;
+            border-color: #aaa;
             border-style: solid;
         }
 
@@ -68,17 +68,20 @@
 </head>
 <body>
     <input type="text" id="datepicker">
-    <p>Summary statistics can go up here</p>
+    <div id="stats">
+        <p>Stats go here</p>
+    </div>
 
     <script type="text/javascript">
 
 		//set dimensions
-		var m = [12, 12, 12, 12]; //top right bottom left  margins
+		var m = [12, 12, 12, 0]; //top right bottom left  margins
         var w = window.innerWidth - m[1] - m[3]; //replace with actual window width
         // var h = 500 - m[0] - m[2]; //replace with actual window height
         var barHeight = 20;
         var cHeight = 32; //height of compressed timeline
 		var eHeight = 500; //height of expanded timeline
+        var eBarPadding = 2;
         var timelineColors = ['#4394F7','#60B632','#EE7C15','#A24DDA','#F2CC20', '#E4454C']
 
         //add datepicker
@@ -126,11 +129,6 @@
 			timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
 			timeEnd = timeBegin + 24*60*60; //show one day of data
 
-			//set horizontal scale
-			var x = d3.scale.linear()
-      		 	.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
-				.range([m[3],w]);  //sets the scale's output range to the specified array of values
-
             //wrapper function for using json data to render SVG objects
 			d3.json("extract.json", function(error, json){
                 if (error) return console.warn(error);
@@ -141,6 +139,33 @@
                     return (el.start <= timeEnd && el.start >= timeBegin) ||
                     (el.end <= timeEnd && el.end >= timeBegin);
                 });
+
+                if(filteredData.length == 0){
+                    $('#stats').html("<p>You have no recordings for this date</p>")
+                }
+                else{
+                    var recordedTime = 0.0
+                    for (i = 0; i < filteredData.length; i++) {
+                        recordedTime += filteredData[i].end - filteredData[i].start
+                    }
+                    recordedTime = (recordedTime / 3600)
+                    recordedTime = recordedTime.toFixed(1)
+                    $('#stats').html("<p>You recorded " + recordedTime.toString() + " hours</p>")
+                }
+
+                //prep data to draw expanded timeline
+                lanes = json["apps"];
+                items = json["appevents"];
+                laneLength = lanes.length;
+
+    			//set scales
+    			var x = d3.scale.linear()
+          		 	.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
+    				.range([m[3],w]);  //sets the scale's output range to the specified array of values
+
+                y = d3.scale.linear()
+                    .domain([0, laneLength])
+                    .range([0, laneLength * (barHeight + 2 * eBarPadding)]);
 
           		//draw timeline axis
           		var t1 = selectedDate;
@@ -164,7 +189,8 @@
       		        .selectAll("text") //move text for tick marks
       		        .attr("y", 8)
       		        .attr("x", 0)
-      		        .style("text-anchor", "center");
+      		        .style("text-anchor", "center")
+                    .style("fill", "#666");
 
 				//draw compressed timeline
       		    cTimeline.selectAll("g").remove(); //remove bars for redraw
@@ -180,7 +206,7 @@
                     .attr("height", barHeight)
                     .style("fill", function(d){return timelineColors[d.appid % 6]})
                     .on("mouseover", function(d) {
-                        tooltip.html(d.appid)
+                        tooltip.html(lanes[d.appid-1].name)
                             .style("left", (d3.event.pageX) + "px")
                             .style("top", (d3.event.pageY - 28) + "px")
                             .style("visibility", "visible"); })
@@ -191,16 +217,6 @@
                         tooltip.style("visibility", "hidden");});
 
 				cbars.exit().remove();
-
-				//prep data to draw expanded timeline
-				lanes = json["apps"];
-			    items = json["appevents"];
-				laneLength = lanes.length;
-
-                //prep vertical scale for the expanded timeline
- 				y = d3.scale.linear()
- 						.domain([0, laneLength])
- 						.range([0, laneLength * (barHeight + 4)]);
 
                 eTimeline.selectAll("g").remove(); //remove everything in eTimeline for redraw
 
@@ -222,14 +238,14 @@
                 //draw the actual expanded timeline bars
       		    ebars.enter().append("rect")
                     .attr("class","ebar")
-                    .attr("y", function(d) {return y(d.appid-1) + 2;})
+                    .attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
 					.attr("x", function(d) {return x(d.start);})
                     .style("fill", function(d) {return timelineColors[d.appid % 6]})
                     // .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
   					.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
                     .attr("height", barHeight)
           		    .on("mouseover", function(d) {
-              		    tooltip.html(d.id)
+              		    tooltip.html(lanes[d.appid-1].name)
                   		.style("left", (d3.event.pageX) + "px")
                   		.style("top", (d3.event.pageY - 28) + "px")
                   		.style("visibility", "visible");
