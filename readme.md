@@ -3,10 +3,10 @@
 This repository holds test code for visualizing Traces data using Javascript. To date, the most development effort has gone into developing a 'Dayview' to inspect the recorded data by day.
 
 To run the Dayview:
-1. navigate to the `dayview` folder and run `python extract.py` to create a JSON file of your Traces data.
-2. Create a symlink to your Traces screenshots by executing `ln -s ~/.traces/screenshots screenshots`. This will let the Dayview access your images without needing to copy all of them.
-3. Run `python -m SimpleHTTPServer` to set up a basic HTTP server to handle reading the JSON data.
-4. Navigate to http://localhost:8000/dayview.html
+ 1. navigate to the `dayview` folder and run `python extract.py` to create a JSON file of your Traces data.
+ 2. Create a symlink to your Traces screenshots by executing `ln -s ~/.traces/screenshots screenshots`. This will let the Dayview access your images without needing to copy all of them.
+ 3. Run `python -m SimpleHTTPServer` to set up a basic HTTP server to handle reading the JSON data.
+ 4. Navigate to http://localhost:8000/dayview.html
 
 This project is still in a rough state. Next steps include:
 * visualizing words types
