@@ -99,7 +99,7 @@
         function renderTimeline(){
             //get start and end time of day we are viewing
             var selectedDate = $( "#datepicker" ).datepicker("getDate")
-            timeBegin = Date.parse(selectedDate)/1000.0 + selectedDate.getTimezoneOffset()*60.0
+            timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0
             timeEnd = timeBegin + 24*60*60 //show one day of data
 
             //scale
@@ -155,8 +155,6 @@
                     .attr("y", 8)
                     .attr("x", 0)
                     .style("text-anchor", "center");
-
-
             });
         };
 

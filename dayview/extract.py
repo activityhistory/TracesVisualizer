@@ -16,11 +16,12 @@ import os
 import sys
 import json
 import collections
+import time
+import datetime
 
 
 db_file = os.path.expanduser('~/.traces/traces.sqlite')  #looks for db under ~/.traces
 con = lite.connect(db_file)
-
 
 with con:
 
@@ -49,7 +50,6 @@ with con:
     #GET list intervals for primary application
     cur.execute(activeappSQL)
     rows = cur.fetchall()
-    print len(rows)
     for row in rows:
         a = collections.OrderedDict()
         a['id'] = row[0]
@@ -69,13 +69,35 @@ with con:
         a['text'] = row[2]
         exps.append(a)
 
+    #get images
+    images = []
+    image_dir = os.path.expanduser('~/.traces/screenshots')  #looks for db under ~/.traces
+    for y in os.listdir(image_dir):
+        y_dir = os.path.join(image_dir,y)
+        for m in os.listdir(y_dir):
+            m_dir = os.path.join(y_dir, m)
+            for d in os.listdir(m_dir):
+                d_dir = os.path.join(m_dir, d)
+                for h in os.listdir(d_dir):
+                    h_dir = os.path.join(d_dir, h)
+                    h_images = os.listdir(h_dir)
+                    for image in h_images:
+                        #make sure the file is an image
+                        if image[-4:] == '.jpg':
+                            i = collections.OrderedDict()
+                            image_time = datetime.datetime.strptime(image[0:19], '%y%m%d-%H%M%S%f')
+                            i['time'] = (image_time - datetime.datetime(1970,1,1)).total_seconds() + time.timezone #add timezone offset
+                            i['image'] = os.path.join("screenshots", y, m, d, h, image)
+                            images.append(i)
+
     #ASSEMBLE apps and experince into json
     d = collections.OrderedDict()
     d['apps']=apps
     d['appevents']=appevents
     d['exps']=exps
+    d['images']=images
     data = d
-    print json.dumps(data)
+    #print json.dumps(data)
 
     #WRITE file
     file = 'extract.json'
