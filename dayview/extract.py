@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # TESTING FILE made.by.a.fox. 12.2.15
+# Updated by acrule 01.21.16
 
 #FEATURE LIST
 #   Y   connect to db
@@ -10,12 +11,15 @@
 #KNOWN ISSUES
 #   2. no formatting or conversion of datetime stamps
 
-
-import sqlite3 as lite
+import re
 import os
 import sys
+
 import json
+import sqlite3 as lite
+
 import collections
+
 import time
 import datetime
 
@@ -29,6 +33,8 @@ with con:
     apps = []  #list of apps
     appevents = []  #list of application events
     exps = []  #list of experiences
+    images = [] #list of screenshots
+    words = [] #list of keywords
 
     cur = con.cursor()
 
@@ -36,6 +42,7 @@ with con:
     appsSQL = "SELECT * FROM app"
     activeappSQL = "SELECT id,app_id,event,time as startt,(select min(time)from appevent b where a.app_id = b.app_id and b.event in ( 'Inactive' ,'Close')and a.time < b.time) as endt from appevent a	where a.event =  'Active'"
     experienceSQL = "SELECT * FROM experience"
+    wordsSQL = "SELECT * FROM keys"
 
     #GET list of applications
     cur.execute(appsSQL)
@@ -59,7 +66,6 @@ with con:
         a['end'] = row[4]
         appevents.append(a)
 
-
     #GET list of experiences
     cur.execute(experienceSQL)
     rows = cur.fetchall()
@@ -69,8 +75,7 @@ with con:
         a['text'] = row[2]
         exps.append(a)
 
-    #get images
-    images = []
+    #GET list of screenshots
     image_dir = os.path.expanduser('~/.traces/screenshots')  #looks for db under ~/.traces
     for y in os.listdir(image_dir):
         y_dir = os.path.join(image_dir,y)
@@ -90,12 +95,66 @@ with con:
                             i['image'] = os.path.join("screenshots", y, m, d, h, image)
                             images.append(i)
 
+    #GET keywords
+    cmd_rows = []
+    new_line = ['Enter','Left','Right','Up','Down','Tab','Escape']
+    starttime = 0.0
+    app = 0
+    window = 0
+    s = ''
+
+    cur.execute(wordsSQL)
+    rows = cur.fetchall()
+    for row in rows:
+        if 'Cmd' in row[3]:
+            cmd_rows.append(row)
+        else:
+            #keep writing the string if we're still on the same window
+            text = str(row[2])
+            if int(row[5]) == window: # and float(row[1]) - time <= 300.0:
+                if text in new_line:
+                    s += ' '
+                elif text == 'Backspace':
+                    s = s[:-1]
+                else:
+                    s += row[2]
+            #if we've switched windows, look back at the frequent words
+            else:
+                keywords = re.compile('\w+').findall(s.lower())
+                c = collections.Counter(keywords)
+
+                # 100 most common english words (not sure if written or spoken)
+                common = ['the','be','to','of','and','a','in','that','have','i','it','for','not','on','with','he','as','you','do','at','this','but','his','by','from','they','we','say','her','she','or','an','will','my','one','all','would','there','their','what','so','up','out','if','about','who','get','which','go','me','when','make','can','like','time','no','just','him','know','take','people','into','year','your','good','some','could','them','see','other','than','then','now','look','only','come','its','over','think','also','back','after','use','two','how','our','work','first','well','way','even','new','want','because','any','these','give','day','most','us']
+
+                # remove most common english words and get most frequent ones remaining
+                for word in list(c):
+                    if word in common:
+                        del c[word]
+                top = [w for w, count in c.most_common(10) if w not in common]
+                if len(top) > 0:
+                    k = collections.OrderedDict()
+                    k['time'] = starttime #datetime.datetime.fromtimestamp(starttime).strftime("%H:%M %m/%d/%y")
+                    k['top'] = top
+                    k['app'] = app
+                    k['window'] = window
+                    words.append(k)
+
+                #reset tracking variables
+                window = int(row[5])
+                app = int(row[4])
+                starttime = float(row[1])
+                if text in new_line or text == 'Backspace':
+                    s = ''
+                else:
+                    s = row[2]
+
     #ASSEMBLE apps and experince into json
     d = collections.OrderedDict()
     d['apps']=apps
     d['appevents']=appevents
     d['exps']=exps
     d['images']=images
+    d['words']=words
     data = d
     #print json.dumps(data)
 

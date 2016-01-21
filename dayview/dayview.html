@@ -63,7 +63,8 @@
         }
 
         .main{
-			/*background:gray;*/
+            margin-top: 10px;
+            /*background:gray;*/
 		}
 
         .timelineBackground{
@@ -98,11 +99,11 @@
 
 		//set dimensions
 		var m = [12, 12, 12, 0]; //top right bottom left  margins
-        var w = window.innerWidth - m[1] - m[3]; //replace with actual window width
-        // var h = 500 - m[0] - m[2]; //replace with actual window height
+        var w = window.innerWidth - m[1] - m[3] - 4; //replace with actual window width
         var barHeight = 20;
         var cHeight = 32; //height of compressed timeline
 		var eHeight = 500; //height of expanded timeline
+        var kHeight = 400;
         var eBarPadding = 2;
         var timelineColors = ['#4394F7','#60B632','#EE7C15','#A24DDA','#F2CC20', '#E4454C']
 
@@ -118,7 +119,7 @@
 		var main = d3.select("body")
            .append("svg")
            .attr("width", w + m[1] + m[3])
-           .attr("height", cHeight + eHeight + m[0] + m[2])
+           .attr("height", cHeight + eHeight + kHeight + m[0] + m[2])
            .attr("class", "main");
 
 		//add container for main compressed timeline
@@ -143,6 +144,10 @@
             .attr("height", eHeight)
             .attr("class", "eTimeline");
 
+        var keywordGroup = main.append('g')
+            .attr("transform", "translate(" + m[3] + "," + (cHeight + eHeight + m[0]) + ")")//start @ x = 75, y = under cTimeline
+            .attr('width', w)
+            .attr('height', kHeight);
 
 		function renderTimeline(){
 
@@ -176,12 +181,16 @@
                 }
 
                 //prep data to draw expanded timeline
-                lanes = json["apps"];
-                items = json["appevents"];
+                lanes = data["apps"];
+                items = data["appevents"];
                 laneLength = lanes.length;
+                //prep image and word data
+                images = data['images']
+                words = data['words']
+                filteredWords = words.filter(function (el) {
+                    return (el.time <= timeEnd && el.time >= timeBegin);
+                });
 
-                //prep image data
-                images = json['images']
     			//set scales
     			var x = d3.scale.linear()
           		 	.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
@@ -336,6 +345,17 @@
                         .style("fill", '#666')
     					// .style("font-size", function(d) { return (Math.min( 12, Math.min(m[3], (m[3] - 8) / this.getComputedTextLength() * 24)))+ "px"; })	//scale font-size to fit in margin
     	    		    .attr("class", "laneText");
+
+                    keywords = keywordGroup.selectAll('.keywords')
+                        .data(filteredWords)
+
+                    keywords.enter().append('text')
+                        .text(function(d) {return d.top;})
+                        .attr("x", m[3])
+    	    		    .attr("y", function(d, i) {return y(i)+10;})
+                        .attr('class', 'keywords');
+
+                    keywords.exit().remove();
 
 			});	//end d3.json
 		}//end renderTimeline()
