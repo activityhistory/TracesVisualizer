@@ -182,6 +182,7 @@
 					 lanes = data["apps"];
 					 items = data["appevents"];
 					 laneLength = lanes.length;
+					 
 					 //prep image and word data
 					 images = data['images']
 					 words = data['words']
@@ -189,10 +190,10 @@
 						  return (el.time <= timeEnd && el.time >= timeBegin);
 					 });
 
-				//set scales
-				var x = d3.scale.linear()
-						.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
-					.range([m[3],w]);  //sets the scale's output range to the specified array of values
+					 //set scales
+					 var x = d3.scale.linear()
+								.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
+								.range([m[3],w]);  //sets the scale's output range to the specified array of values
 
 					 y = d3.scale.linear()
 						  .domain([0, laneLength])
@@ -211,9 +212,9 @@
 						 .scale(xScale)
 						 .orient("bottom");
 
-					 d3.selectAll(".axis").remove(); //remove any existing axis
+					d3.selectAll(".axis").remove(); //remove any existing axis
 
-				main.append("g") //redraw the timeline axis
+					main.append("g") //redraw the timeline axis
 						  .attr("class", "axis")
 						  .attr("transform", "translate("+m[3]+"," + barHeight + ")")
 						  .call(xAxis)
@@ -223,13 +224,15 @@
 						  .style("text-anchor", "center")
 						  .style("fill", "#666");
 
-				//draw compressed timeline
-					 cTimeline.selectAll("g").remove(); //remove bars for redraw
+					//********************************************************
+					//draw compressed timeline
+					//********************************************************
+					cTimeline.selectAll("g").remove(); //remove bars for redraw
 
-				cbars = cTimeline.append("g").selectAll(".cbar")
+					cbars = cTimeline.append("g").selectAll(".cbar")
 						  .data(filteredData);
 
-					 cbars.enter().append("rect")
+					cbars.enter().append("rect")
 						  .attr("class", 'cbar')
 						  .attr("x", function(d) {return x(d.start);})   //x = scaled value of start time
 						  .attr("y", 0)
@@ -241,54 +244,47 @@
 									 .style("left", (d3.event.pageX) + "px")
 									 .style("top", (d3.event.pageY - 28) + "px")
 									 .style("visibility", "visible");
-								//get image
-								var t = x.invert(d3.event.pageX)
-								var result = $.grep(images, function(e){ return e.time >= t; });
-								if (result.length >= 1) {
-									 $('#screenshot').attr("src", result[0].image)
-								}
-								else{
-									 $('#screenshot').attr("src","")
-								}
-						  })
+									 //get image
+									 var t = x.invert(d3.event.pageX)
+									 var result = $.grep(images, function(e){ return e.time >= t; });
+									 if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+									 else{$('#screenshot').attr("src","")}})
 						  .on("mousemove", function(d) {
 								tooltip.style("left", (d3.event.pageX) + "px")
 									 .style("top", (d3.event.pageY - 28) + "px");
 								var t = x.invert(d3.event.pageX)
 								var result = $.grep(images, function(e){ return e.time >= t; });
-								if (result.length >= 1) {
-									 $('#screenshot').attr("src", result[0].image)
-								}
-								else{
-									 $('#screenshot').attr("src","")
-								}
-						  })
+								if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+								else{$('#screenshot').attr("src","")}})
 						  .on("mouseout", function(d) {
 								tooltip.style("visibility", "hidden");
-								$('#screenshot').attr("src","")
-						  });
+								$('#screenshot').attr("src","")});
 
-				cbars.exit().remove();
+					cbars.exit().remove();
 
-					 eTimeline.selectAll("g").remove(); //remove everything in eTimeline for redraw
+					
+					//********************************************************
+					//draw expanded timeline
+					//********************************************************
+					eTimeline.selectAll("g").remove(); //remove everything in eTimeline for redraw
 
-					 //draw the lane lines
-				eTimeline.append("g").selectAll(".laneLine")
-					 .data(lanes)
-					 .enter().append("line")
-					 .attr("x1", m[3])
-					 .attr("y1", function(d, i) {return y(i);})
-					 .attr("x2", w)
-					 .attr("y2", function(d, i) {return y(i);})
-					 .attr("stroke", "lightgray")
-					.attr("class","laneLine");
+					//draw the lane lines
+					eTimeline.append("g").selectAll(".laneLine")
+					 	.data(lanes)
+					 	.enter().append("line")
+						.attr("x1", m[3])
+					 	.attr("y1", function(d, i) {return y(i);})
+					 	.attr("x2", w)
+					 	.attr("y2", function(d, i) {return y(i);})
+					 	.attr("stroke", "lightgray")
+						.attr("class","laneLine");
 
 					 // not sure why we are filtering here
 					ebars = eTimeline.append("g").selectAll(".ebar")
 						.data(filteredData, function(d) { return d.id; });
 
-					 //draw the actual expanded timeline bars
-					 ebars.enter().append("rect")
+					//draw the actual expanded timeline bars
+					ebars.enter().append("rect")
 						  .attr("class","ebar")
 						  .attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
 					.attr("x", function(d) {return x(d.start);})
@@ -304,33 +300,22 @@
 								//get image
 								var t = x.invert(d3.event.pageX)
 								var result = $.grep(images, function(e){ return e.time >= t; });
-								if (result.length >= 1) {
-									 $('#screenshot').attr("src", result[0].image)
-								}
-								else{
-									 $('#screenshot').attr("src","")
-								}
-						  })
+								if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+								else{$('#screenshot').attr("src","")}})
 						  .on("mousemove", function(d) {
 								tooltip.style("left", (d3.event.pageX) + "px")
 									 .style("top", (d3.event.pageY - 28) + "px");
 								var t = x.invert(d3.event.pageX)
 								var result = $.grep(images, function(e){ return e.time >= t; });
-								if (result.length >= 1) {
-									 $('#screenshot').attr("src", result[0].image)
-								}
-								else{
-									 $('#screenshot').attr("src","")
-								}
-						  })
+								if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+								else{$('#screenshot').attr("src","")}})
 						  .on("mouseout", function(d) {
 								tooltip.style("visibility", "hidden");
-								$('#screenshot').attr("src","")
-						  });
+								$('#screenshot').attr("src","")});
 
 					ebars.exit().remove();
 
-						  //add text for app labels
+					//add text for app labels
 					eTimeline.append("g").selectAll(".laneText")
 						 .data(lanes)
 						 .enter().append("text")
@@ -342,18 +327,21 @@
 								.style("font-size", "11px")
 								.style("fill", '#666')
 						// .style("font-size", function(d) { return (Math.min( 12, Math.min(m[3], (m[3] - 8) / this.getComputedTextLength() * 24)))+ "px"; })  //scale font-size to fit in margin
-						 .attr("class", "laneText");
+						 		.attr("class", "laneText");
 
-						  keywords = keywordGroup.selectAll('.keywords')
-								.data(filteredWords)
+					//********************************************************
+					//keyword stuff
+					//********************************************************								
+				 	keywords = keywordGroup.selectAll('.keywords')
+						 .data(filteredWords)
 
-						  keywords.enter().append('text')
-								.text(function(d) {return d.top;})
-								.attr("x", m[3])
+				 	keywords.enter().append('text')
+						 .text(function(d) {return d.top;})
+						 .attr("x", m[3])
 						 .attr("y", function(d, i) {return y(i)+10;})
-								.attr('class', 'keywords');
+						 .attr('class', 'keywords');
 
-						  keywords.exit().remove();
+				 	keywords.exit().remove();
 
 			});   //end d3.json
 		}//end renderTimeline()
