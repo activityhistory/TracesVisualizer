@@ -246,7 +246,7 @@ $(document).ready(function() {
 					 .attr("y", function(d, i) {return y(i)+12;})
 					 .attr('class', 'keywords');
 
-				keywords.text(function(d) {return d.top;});
+				keywords.text(function(d) {return lanes[d.app-1].name+": " +d.top;});
 
 			 	keywords.exit().remove();
 

@@ -31,6 +31,7 @@ with con:
 
     data = []  #master data container
     apps = []  #list of apps
+    windows = [] # list of windows
     appevents = []  #list of application events
     exps = []  #list of experiences
     images = [] #list of screenshots
@@ -40,6 +41,7 @@ with con:
 
     #SQL query strings
     appsSQL = "SELECT * FROM app"
+    windowsSQL = "SELECT * FROM window"
     activeappSQL = "SELECT a.id, a.app_id, a.event, a.time as startt, min(b.time) AS endt FROM appevent a, appevent b WHERE a.app_id = b.app_id AND a.event = 'Active' AND b.event in ('Inactive', 'Close') AND a.time < b.time AND a.time IS NOT NULL AND b.time IS NOT NULL GROUP BY startt"
     experienceSQL = "SELECT * FROM experience"
     wordsSQL = "SELECT * FROM keys"
@@ -53,6 +55,17 @@ with con:
         a['time'] = row[1]
         a['name'] = row[2]
         apps.append(a)
+
+    #GET list of applications
+    cur.execute(windowsSQL)
+    rows = cur.fetchall()
+    for row in rows:
+        a = collections.OrderedDict()
+        a['id'] = row[0]
+        a['time'] = row[1]
+        a['name'] = row[2]
+        a['app'] = row[3]
+        windows.append(a)
 
     #GET list intervals for primary application
     cur.execute(activeappSQL)
@@ -151,6 +164,7 @@ with con:
     #ASSEMBLE apps and experince into json
     d = collections.OrderedDict()
     d['apps']=apps
+    d['window']=windows
     d['appevents']=appevents
     d['exps']=exps
     d['images']=images
