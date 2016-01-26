@@ -40,7 +40,7 @@ with con:
 
     #SQL query strings
     appsSQL = "SELECT * FROM app"
-    activeappSQL = "SELECT id,app_id,event,time as startt,(select min(time)from appevent b where a.app_id = b.app_id and b.event in ( 'Inactive' ,'Close')and a.time < b.time) as endt from appevent a	where a.event =  'Active'"
+    activeappSQL = "SELECT a.id, a.app_id, a.event, a.time as startt, min(b.time) AS endt FROM appevent a, appevent b WHERE a.app_id = b.app_id AND a.event = 'Active' AND b.event in ('Inactive', 'Close') AND a.time < b.time AND a.time IS NOT NULL AND b.time IS NOT NULL GROUP BY startt"
     experienceSQL = "SELECT * FROM experience"
     wordsSQL = "SELECT * FROM keys"
 
