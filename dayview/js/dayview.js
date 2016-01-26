@@ -1,4 +1,5 @@
 $(document).ready(function() {
+	
 	//set dimensions
 	var m = [12, 12, 12, 0]; //top right bottom left  margins
 	var w = window.innerWidth - m[1] - m[3] - 4; //replace with actual window width
@@ -9,7 +10,7 @@ $(document).ready(function() {
 	var eBarPadding = 2;
 	var timelineColors = ['#4394F7','#60B632','#EE7C15','#A24DDA','#F2CC20', '#E4454C']
 
-	 //add datepicker
+	//add datepicker
 	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(date) {renderTimeline();} });
 	$("#datepicker").datepicker("setDate", "0");
 	//get start and end time of the day we are viewing
@@ -65,21 +66,25 @@ $(document).ready(function() {
 
   //svg brush elements
 	var brush = d3.svg.brush()
-  .x(x)
-  .extent([x(timeBegin), x(timeEnd)])
-  .on("brush", renderTimeline);
+  .x(x) //xscale of the brush is the x scale of the chart
+  // .extent([timeBegin, timeEnd]) //extent is current time range
+  .on("brush", updateBrushed) //<--- on BRUSH event, only expanded timeline is redrawn
+	.on("brushend",brushEnd); //<-- on BRUSHEND, expanded redrawn to date frame if brush is empty
  
   var area = main.append("g")
                 .attr("class", "x brush")
                 .call(brush)
                 .selectAll("rect")
                 .attr("y", 1)
-	.attr("height", barHeight - 1);
+								.attr("height", barHeight - 1);
 
 
+	//DRAW ALL THE THINGS!
 	renderTimeline();
-
 	
+	//-------------------------------------------------
+	//renders both timelines
+	//-------------------------------------------------
 	function renderTimeline(){
 		
 		//get time again -- may have changed
@@ -100,12 +105,11 @@ $(document).ready(function() {
 				 words = data['words'];
 				 laneLength = lanes.length;
 				 
-				 //TODO: add access to filter based on brush extent
-				 //filter data
+				 //filter data for the date
 				 filteredData = data['appevents'].filter(function (el) {
-					  return (el.start <= timeEnd && el.start >= timeBegin) ||
-					  (el.end <= timeEnd && el.end >= timeBegin);
-				 });
+						  return (el.start <= timeEnd && el.start >= timeBegin) ||
+						  (el.end <= timeEnd && el.end >= timeBegin);}); 
+
 				 if(filteredData.length == 0){
 					  $('#stats').html("<p>You have no recordings for this date<\/p>")
 				 }
@@ -222,7 +226,9 @@ $(document).ready(function() {
 								.attr("class","laneLine");
 
 							 // not sure why we are filtering here
-							ebars = eTimeline.append("g").selectAll(".ebar")
+							ebars = eTimeline.append("g")
+								.attr("class","ebarContainer")
+								.selectAll(".ebar")
 								.data(filteredData, function(d) { return d.id; });
 
 							//draw the actual expanded timeline bars
@@ -294,4 +300,79 @@ $(document).ready(function() {
 							
 		});   //end d3.json
 	}//end renderTimeline()
+	
+	//-------------------------------------------------
+	//redraws expanded based on brush 
+	//-------------------------------------------------
+	function updateBrushed()
+	{
+		var minExtent = brush.extent()[0];
+		var maxExtent = brush.extent()[1];
+
+		//scale for brushed timeline
+		var xb = d3.scale.linear()
+		.domain([minExtent, maxExtent])
+    .range([0, w]);
+		
+		//get new data based on brush extents
+	  filteredData = data['appevents'].filter(function (el) {
+			  return (el.start <= maxExtent && el.start >= minExtent) ||
+			  (el.end <= maxExtent && el.end >= minExtent);}); 
+	    			console.log("numitems " + filteredData.length);
+		
+		
+		
+		
+		eTimeline.selectAll(".ebarContainer").remove(); //remove ebars 
+
+		var ebars = eTimeline.append("g")
+			.attr("class","ebarContainer")
+		  .selectAll(".ebar")
+			.data(filteredData, function(d) {return d.id; });
+
+		//draw the actual expanded timeline bars
+		ebars.enter().append("rect")
+			  .attr("class","ebar")
+			  .attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
+		.attr("x", function(d) {return xb(d.start);})
+			  .style("fill", function(d) {return timelineColors[d.appid % 6]})
+			  // .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
+		.attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
+			  .attr("height", barHeight)
+			  .on("mouseover", function(d) {
+					tooltip.html(lanes[d.appid-1].name)
+						 .style("left", (d3.event.pageX) + "px")
+						 .style("top", (d3.event.pageY - 28) + "px")
+						 .style("visibility", "visible");
+					//get image
+					var t = x.invert(d3.event.pageX)
+					var result = $.grep(images, function(e){ return e.time >= t; });
+					if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+					else{$('#screenshot').attr("src","")}})
+			  .on("mousemove", function(d) {
+					tooltip.style("left", (d3.event.pageX) + "px")
+						 .style("top", (d3.event.pageY - 28) + "px");
+					var t = x.invert(d3.event.pageX)
+					var result = $.grep(images, function(e){ return e.time >= t; });
+					if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+					else{$('#screenshot').attr("src","")}})
+			  .on("mouseout", function(d) {
+					tooltip.style("visibility", "hidden");
+					$('#screenshot').attr("src","")});
+
+		//ebars.exit().remove();
+
+		
+	}
+	
+	//-------------------------------------------------
+	//redraws expanded if brush is empty
+	//-------------------------------------------------
+	function brushEnd()
+	{
+		//if the brush is empty, redraw the timeline based on date
+		if (brush.empty()) renderTimeline();
+	}
+	
+	
 });
