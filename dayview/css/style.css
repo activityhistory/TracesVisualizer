@@ -75,3 +75,9 @@ h1{
 .main{
 	margin-top: 10px;
 }
+
+.brush .extent {
+  stroke: #000;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
