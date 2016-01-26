@@ -46,10 +46,10 @@ $(document).ready(function() {
 		.attr("height", eHeight)
 		.attr("class", "eTimeline");
 
-	var keywordGroup = main.append('g')
-		.attr("transform", "translate(" + m[3] + "," + (cHeight + eHeight + m[0]) + ")")//start @ x = 75, y = under cTimeline
-		.attr('width', w)
-		.attr('height', kHeight);
+	var keywordSVG = d3.select("#detailsContainer").append('svg')
+		.attr('height', '100%');
+
+	var keywordGroup = keywordSVG.append('g');
 
 	renderTimeline();
 
@@ -88,7 +88,7 @@ $(document).ready(function() {
 				 lanes = data["apps"];
 				 items = data["appevents"];
 				 laneLength = lanes.length;
-			 
+
 				 //prep image and word data
 				 images = data['images']
 				 words = data['words']
@@ -168,7 +168,7 @@ $(document).ready(function() {
 
 				cbars.exit().remove();
 
-			
+
 				//********************************************************
 				//draw expanded timeline
 				//********************************************************
@@ -242,10 +242,11 @@ $(document).ready(function() {
 					 .data(filteredWords)
 
 			 	keywords.enter().append('text')
-					 .text(function(d) {return d.top;})
-					 .attr("x", m[3])
-					 .attr("y", function(d, i) {return y(i)+10;})
+					 .attr("x", 0)
+					 .attr("y", function(d, i) {return y(i)+12;})
 					 .attr('class', 'keywords');
+
+				keywords.text(function(d) {return d.top;});
 
 			 	keywords.exit().remove();
 
