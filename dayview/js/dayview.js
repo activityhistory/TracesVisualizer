@@ -65,19 +65,19 @@ $(document).ready(function() {
 	var keywordGroup = keywordSVG.append('g');
 
   //svg brush elements
-	var brush = d3.svg.brush()
-  .x(x) //xscale of the brush is the x scale of the chart
-  // .extent([timeBegin, timeEnd]) //extent is current time range
-  .on("brush", updateBrushed) //<--- on BRUSH event, only expanded timeline is redrawn
-	.on("brushend",brushEnd); //<-- on BRUSHEND, expanded redrawn to date frame if brush is empty
- 
-  var area = main.append("g")
-                .attr("class", "x brush")
-                .call(brush)
-                .selectAll("rect")
-                .attr("y", 1)
-								.attr("height", barHeight - 1);
-
+	// var brush = d3.svg.brush()
+//   .x(x) //xscale of the brush is the x scale of the chart
+//   // .extent([timeBegin, timeEnd]) //extent is current time range
+//   .on("brush", updateBrushed) //<--- on BRUSH event, only expanded timeline is redrawn
+// 	.on("brushend",brushEnd); //<-- on BRUSHEND, expanded redrawn to date frame if brush is empty
+//
+//   var area = main.append("g")
+//                 .attr("class", "x brush")
+//                 .call(brush)
+//                 .selectAll("rect")
+//                 .attr("y", 1)
+// 								.attr("height", barHeight - 1);
+//
 
 	//DRAW ALL THE THINGS!
 	renderTimeline();
@@ -97,6 +97,13 @@ $(document).ready(function() {
 		d3.json("../extract.json", function(error, json){
 				 if (error) return console.warn(error);
 
+			
+			//not sure why this needs to be declared again ---ARF investigating	 
+		 	var x = d3.scale.linear()
+		 		.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
+		 		.range([m[3],w]);  //sets the scale's output range to the specified array of values
+	
+				 
 				 // prepare data
 				 data = json;
 				 lanes = data["apps"];
@@ -295,14 +302,14 @@ $(document).ready(function() {
 		 				keywords.text(function(d) {return lanes[d.app-1].name+": " +d.top;});
 
 		 			 	keywords.exit().remove();
-								
+
 				}
-							
+
 		});   //end d3.json
 	}//end renderTimeline()
-	
+
 	//-------------------------------------------------
-	//redraws expanded based on brush 
+	//redraws expanded based on brush
 	//-------------------------------------------------
 	function updateBrushed()
 	{
@@ -313,17 +320,17 @@ $(document).ready(function() {
 		var xb = d3.scale.linear()
 		.domain([minExtent, maxExtent])
     .range([0, w]);
-		
+
 		//get new data based on brush extents
 	  filteredData = data['appevents'].filter(function (el) {
 			  return (el.start <= maxExtent && el.start >= minExtent) ||
-			  (el.end <= maxExtent && el.end >= minExtent);}); 
+			  (el.end <= maxExtent && el.end >= minExtent);});
 	    			console.log("numitems " + filteredData.length);
-		
-		
-		
-		
-		eTimeline.selectAll(".ebarContainer").remove(); //remove ebars 
+
+
+
+
+		eTimeline.selectAll(".ebarContainer").remove(); //remove ebars
 
 		var ebars = eTimeline.append("g")
 			.attr("class","ebarContainer")
@@ -362,9 +369,9 @@ $(document).ready(function() {
 
 		//ebars.exit().remove();
 
-		
+
 	}
-	
+
 	//-------------------------------------------------
 	//redraws expanded if brush is empty
 	//-------------------------------------------------
@@ -373,6 +380,6 @@ $(document).ready(function() {
 		//if the brush is empty, redraw the timeline based on date
 		if (brush.empty()) renderTimeline();
 	}
-	
+
 	
 });
