@@ -9,7 +9,7 @@ $(document).ready(function() {
 	var kHeight = 400;
 	var eBarPadding = 2;
 	var timelineColors = ['#2F81AE','#A42510','#DE9D18','#256384','#C0400D','#E1C020','#1C4766','#DD5C00','#96AC53','#132D45','#DE7C0F','#599780']
-	//var timelineColors = ['#4394F7','#60B632','#EE7C15','#A24DDA','#F2CC20', '#E4454C']
+	var activityColors = ['#4394F7','#60B632','#EE7C15','#A24DDA','#F2CC20', '#E4454C']
 
 	//add datepicker
 	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(date) {renderTimeline();} });
@@ -118,6 +118,9 @@ $(document).ready(function() {
 				return (el.start <= timeEnd && el.start >= timeBegin) ||
 				(el.end <= timeEnd && el.end >= timeBegin);
 			});
+
+			//get most used applications in time slices
+			appsByTime = calculateActivity(filteredApps, timeBegin, timeEnd);
 
 			//get only text typed today
 			filteredWords = words.filter(function (el) {
@@ -278,6 +281,20 @@ $(document).ready(function() {
 							$('#screenshot').attr("src","")});
 
 				cbars.exit().remove();
+
+				abars = cTimeline.append("g").selectAll(".abar")
+						.data(appsByTime);
+
+				abars.enter().append("rect")
+						.attr("class", ".abar")
+						.attr("x", function(d) {return x(d.start);})
+						.attr("y", 0)
+						.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
+						.attr("height", barHeight + 10)
+						.style("fill", function(d){return activityColors[d.value % 6]})
+						.style("fill-opacity", 0.2)
+						.style("stroke", function(d){return activityColors[d.value % 6]})
+						.style("stroke-width", 1.5)
 			}
 
 			drawExpanded();
@@ -454,5 +471,33 @@ $(document).ready(function() {
 	function brushEnd(){
 		//if the brush is empty, redraw the timeline based on date
 		if (brush.empty()) renderTimeline();
+	}
+
+	function calculateActivity(filteredApps, timeBegin, timeEnd) {
+		appsByTime = []
+		taskMap = {}
+		for (i = timeBegin; i <= timeEnd; i += 1800) {
+			temporalApps = filteredApps.filter(function(el) {
+				return el.start < i + 1800 && el.start > i;
+			});
+
+			appCounts = {}
+
+			temporalApps.forEach(function(element, index) {
+				appCounts[element['appid']] = appCounts[element['appid']] + 1 || 1;
+			});
+			keysSorted = Object.keys(appCounts).sort(function(a,b){return appCounts[b]-appCounts[a]}).slice(0, 3);
+			if (keysSorted.length < 3)
+				continue;
+			keysSorted.sort()
+			keysSorted = keysSorted.join("")
+			if (!(keysSorted in taskMap)) {
+				taskMap[keysSorted] = Object.keys(taskMap).length + 1;
+			}
+
+			appsByTime.push({"start": i, "end": i + 1800, "value": taskMap[keysSorted]});
+		}
+
+		return appsByTime;
 	}
 });	//end (document).ready()
