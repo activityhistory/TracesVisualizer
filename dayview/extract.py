@@ -92,12 +92,20 @@ with con:
     image_dir = os.path.expanduser('~/.traces/screenshots')  #looks for db under ~/.traces
     for y in os.listdir(image_dir):
         y_dir = os.path.join(image_dir,y)
+        if not os.path.isdir(y_dir):
+            continue
         for m in os.listdir(y_dir):
             m_dir = os.path.join(y_dir, m)
+            if not os.path.isdir(m_dir):
+                continue
             for d in os.listdir(m_dir):
                 d_dir = os.path.join(m_dir, d)
+                if not os.path.isdir(d_dir):
+                    continue
                 for h in os.listdir(d_dir):
                     h_dir = os.path.join(d_dir, h)
+                    if not os.path.isdir(h_dir):
+                        continue
                     h_images = os.listdir(h_dir)
                     for image in h_images:
                         #make sure the file is an image
