@@ -139,23 +139,26 @@ with con:
                     s = s[:-1]
                 else:
                     s += row[2]
+
             #if we've switched windows, look back at the frequent words
             else:
-                keywords = re.compile('\w+').findall(s.lower())
-                c = collections.Counter(keywords)
+                #don't get keywords for now. Just pass the entire string
+                # keywords = re.compile('\w+').findall(s.lower())
+                # c = collections.Counter(keywords)
+                #
+                # # 100 most common english words (not sure if written or spoken)
+                # common = ['the','be','to','of','and','a','in','that','have','i','it','for','not','on','with','he','as','you','do','at','this','but','his','by','from','they','we','say','her','she','or','an','will','my','one','all','would','there','their','what','so','up','out','if','about','who','get','which','go','me','when','make','can','like','time','no','just','him','know','take','people','into','year','your','good','some','could','them','see','other','than','then','now','look','only','come','its','over','think','also','back','after','use','two','how','our','work','first','well','way','even','new','want','because','any','these','give','day','most','us']
+                #
+                # # remove most common english words and get most frequent ones remaining
+                # for word in list(c):
+                #     if word in common:
+                #         del c[word]
+                # top = [w for w, count in c.most_common(10) if w not in common]
 
-                # 100 most common english words (not sure if written or spoken)
-                common = ['the','be','to','of','and','a','in','that','have','i','it','for','not','on','with','he','as','you','do','at','this','but','his','by','from','they','we','say','her','she','or','an','will','my','one','all','would','there','their','what','so','up','out','if','about','who','get','which','go','me','when','make','can','like','time','no','just','him','know','take','people','into','year','your','good','some','could','them','see','other','than','then','now','look','only','come','its','over','think','also','back','after','use','two','how','our','work','first','well','way','even','new','want','because','any','these','give','day','most','us']
-
-                # remove most common english words and get most frequent ones remaining
-                for word in list(c):
-                    if word in common:
-                        del c[word]
-                top = [w for w, count in c.most_common(10) if w not in common]
-                if len(top) > 0:
+                if len(s) > 0:
                     k = collections.OrderedDict()
                     k['time'] = starttime #datetime.datetime.fromtimestamp(starttime).strftime("%H:%M %m/%d/%y")
-                    k['top'] = top
+                    k['text'] = s #just pass teh whole string for now
                     k['app'] = app
                     k['window'] = window
                     words.append(k)

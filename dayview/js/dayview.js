@@ -1,5 +1,5 @@
 $(document).ready(function() {
-	
+
 	//set dimensions
 	var m = [12, 12, 12, 0]; //top right bottom left  margins
 	var w = window.innerWidth - m[1] - m[3] - 4; //replace with actual window width
@@ -8,7 +8,8 @@ $(document).ready(function() {
 	var eHeight = 500; //height of expanded timeline
 	var kHeight = 400;
 	var eBarPadding = 2;
-	var timelineColors = ['#4394F7','#60B632','#EE7C15','#A24DDA','#F2CC20', '#E4454C']
+	var timelineColors = ['#2F81AE','#A42510','#DE9D18','#256384','#C0400D','#E1C020','#1C4766','#DD5C00','#96AC53','#132D45','#DE7C0F','#599780']
+	//var timelineColors = ['#4394F7','#60B632','#EE7C15','#A24DDA','#F2CC20', '#E4454C']
 
 	//add datepicker
 	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(date) {renderTimeline();} });
@@ -17,14 +18,14 @@ $(document).ready(function() {
 	selectedDate = $( "#datepicker" ).datepicker("getDate");
 	timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
 	timeEnd = timeBegin + 24*60*60; //show one day of data
-	
+
 	//set horizontal scale
 	var x = d3.scale.linear()
 		.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
 		.range([m[3],w]);  //sets the scale's output range to the specified array of values
-	
+
 	//********************************************************
-	//draw containers 
+	//draw containers
 	//********************************************************
 	// container for tooltip
 	var tooltip = d3.select("body").append("div")
@@ -81,80 +82,90 @@ $(document).ready(function() {
 
 	//DRAW ALL THE THINGS!
 	renderTimeline();
-	
+
 	//-------------------------------------------------
 	//renders both timelines
 	//-------------------------------------------------
 	function renderTimeline(){
-		
+
 		//get time again -- may have changed
 		selectedDate = $( "#datepicker" ).datepicker("getDate");
 		timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
 		timeEnd = timeBegin + 24*60*60; //show one day of data
-	
-		
+
+
 		//wrapper function for using json data to render SVG objects
 		d3.json("../extract.json", function(error, json){
 				 if (error) return console.warn(error);
 
-			
-			//not sure why this needs to be declared again ---ARF investigating	 
-		 	var x = d3.scale.linear()
-		 		.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
-		 		.range([m[3],w]);  //sets the scale's output range to the specified array of values
-	
-				 
-				 // prepare data
-				 data = json;
-				 lanes = data["apps"];
-				 items = data["appevents"];
-				 images = data['images'];
-				 words = data['words'];
-				 laneLength = lanes.length;
-				 
-				 //filter data for the date
-				 filteredData = data['appevents'].filter(function (el) {
-						  return (el.start <= timeEnd && el.start >= timeBegin) ||
-						  (el.end <= timeEnd && el.end >= timeBegin);}); 
 
-				 if(filteredData.length == 0){
-					  $('#stats').html("<p>You have no recordings for this date<\/p>")
-				 }
-				 else{
-					  var recordedTime = 0.0
-					  for (i = 0; i < filteredData.length; i++) {
-							recordedTime += filteredData[i].end - filteredData[i].start
-					  }
-					  recordedTime = (recordedTime / 3600)
-					  recordedTime = recordedTime.toFixed(1)
-					  $('#stats').html("<p>You recorded " + recordedTime.toString() + " hours<\/p>")
-				 }
-				 filteredWords = words.filter(function (el) {
-					  return (el.time <= timeEnd && el.time >= timeBegin);
-				 });
-				
+			//not sure why this needs to be declared again ---ARF investigating
+			var x = d3.scale.linear()
+				.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
+				.range([m[3],w]);  //sets the scale's output range to the specified array of values
+
+
+				// prepare data
+				data = json;
+				apps = data["apps"];
+				items = data["appevents"];
+				images = data['images'];
+				words = data['words'];
+				laneLength = apps.length;
+
+				//filter data for the date
+				filteredApps = items.filter(function (el) {
+					return (el.start <= timeEnd && el.start >= timeBegin) ||
+					(el.end <= timeEnd && el.end >= timeBegin);
+				});
+
+				filteredWords = words.filter(function (el) {
+					return (el.time <= timeEnd && el.time >= timeBegin);
+				});
+
+				// get # of words typed
+				numWords = 0
+				for (i = 0; i < filteredWords.length; i++) {
+					numWords += Math.floor(filteredWords[i].text.length / 5);
+				}
+
+				if(filteredApps.length == 0){
+				  	$('#stats').html("<p>You have no recordings for this date<\/p>")
+				}
+				else{
+				  	var recordedTime = 0.0
+				  	for (i = 0; i < filteredApps.length; i++) {
+						recordedTime += filteredApps[i].end - filteredApps[i].start
+				 	}
+				  	recordedTime = (recordedTime / 3600)
+				  	recordedTime = recordedTime.toFixed(1)
+				  	$('#stats').html(
+					  	"<p>" + recordedTime.toString() + " hours recorded<\/p>\
+					  	<p>" + numWords + " words typed<\/p>")
+				}
+
 				 //TODO: decide which sections need to be functions and which can be main
-				
+
 				drawAxis();
 				//********************************************************
-			  //draw main timeline axis 
-			  //********************************************************				
+			  //draw main timeline axis
+			  //********************************************************
 				function drawAxis()
 						{
 						  var t1 = selectedDate;
 						  var t2 = new Date(t1.getTime());
 						  t2.setDate(t2.getDate() + 1);
-         
+
 						  var xScale = d3.time.scale()
 						 	 .domain([t1, t2])
 						 	 .range([m[3], w]);
-         
+
 						  var xAxis = d3.svg.axis()
 						 	 .scale(xScale)
 						 	 .orient("bottom");
-         
+
 						  d3.selectAll(".axis").remove(); //remove any existing axis
-         
+
 						  main.append("g") //redraw the timeline axis
 						 	  .attr("class", "axis")
 						 	  .attr("transform", "translate("+m[3]+"," + barHeight + ")")
@@ -164,18 +175,18 @@ $(document).ready(function() {
 						 	  .attr("x", 0)
 						 	  .style("text-anchor", "center")
 						 	  .style("fill", "#666");
-						}				
+						}
 
-				drawCompressed();		
+				drawCompressed();
 				//********************************************************
 				//draw compressed timeline
-				//********************************************************			
+				//********************************************************
 				function drawCompressed()
 						{
 							cTimeline.selectAll("g").remove(); //remove bars for redraw
 
 							cbars = cTimeline.append("g").selectAll(".cbar")
-								  .data(filteredData);
+								  .data(filteredApps);
 
 							cbars.enter().append("rect")
 								  .attr("class", 'cbar')
@@ -185,7 +196,7 @@ $(document).ready(function() {
 								  .attr("height", barHeight)
 								  .style("fill", function(d){return timelineColors[d.appid % 6]})
 								  .on("mouseover", function(d) {
-										tooltip.html(lanes[d.appid-1].name)
+										tooltip.html(apps[d.appid-1].name)
 											 .style("left", (d3.event.pageX) + "px")
 											 .style("top", (d3.event.pageY - 28) + "px")
 											 .style("visibility", "visible");
@@ -207,23 +218,23 @@ $(document).ready(function() {
 
 							cbars.exit().remove();
 						}
-				
-				drawExpanded();		
+
+				drawExpanded();
 				//********************************************************
 				//draw expanded timeline
 				//********************************************************
 			  function drawExpanded()
 						{
-							
+
 							y = d3.scale.linear()
 						  .domain([0, laneLength])
-						  .range([0, laneLength * (barHeight + 2 * eBarPadding)]);	
-							
+						  .range([0, laneLength * (barHeight + 2 * eBarPadding)]);
+
 							eTimeline.selectAll("g").remove(); //remove everything in eTimeline for redraw
 
 							//draw the lane lines
 							eTimeline.append("g").selectAll(".laneLine")
-							 	.data(lanes)
+							 	.data(apps)
 							 	.enter().append("line")
 								.attr("x1", m[3])
 							 	.attr("y1", function(d, i) {return y(i);})
@@ -236,7 +247,7 @@ $(document).ready(function() {
 							ebars = eTimeline.append("g")
 								.attr("class","ebarContainer")
 								.selectAll(".ebar")
-								.data(filteredData, function(d) { return d.id; });
+								.data(filteredApps, function(d) { return d.id; });
 
 							//draw the actual expanded timeline bars
 							ebars.enter().append("rect")
@@ -248,7 +259,7 @@ $(document).ready(function() {
 							.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
 								  .attr("height", barHeight)
 								  .on("mouseover", function(d) {
-										tooltip.html(lanes[d.appid-1].name)
+										tooltip.html(apps[d.appid-1].name)
 											 .style("left", (d3.event.pageX) + "px")
 											 .style("top", (d3.event.pageY - 28) + "px")
 											 .style("visibility", "visible");
@@ -272,7 +283,7 @@ $(document).ready(function() {
 
 							//add text for app labels
 							eTimeline.append("g").selectAll(".laneText")
-								 .data(lanes)
+								 .data(apps)
 								 .enter().append("text")
 								 .text(function(d) {return d.name;})
 								 .attr("x", m[3])
@@ -284,7 +295,7 @@ $(document).ready(function() {
 								// .style("font-size", function(d) { return (Math.min( 12, Math.min(m[3], (m[3] - 8) / this.getComputedTextLength() * 24)))+ "px"; })  //scale font-size to fit in margin
 								 		.attr("class", "laneText");
 						}
-										
+
 				drawKeywords();
 				//********************************************************
 				//keyword stuff
@@ -299,7 +310,7 @@ $(document).ready(function() {
 		 					 .attr("y", function(d, i) {return y(i)+12;})
 		 					 .attr('class', 'keywords');
 
-		 				keywords.text(function(d) {return lanes[d.app-1].name+": " +d.top;});
+		 				keywords.text(function(d) {return apps[d.app-1].name+": " +d.text;});
 
 		 			 	keywords.exit().remove();
 
@@ -322,10 +333,10 @@ $(document).ready(function() {
     .range([0, w]);
 
 		//get new data based on brush extents
-	  filteredData = data['appevents'].filter(function (el) {
+	  filteredApps = data['appevents'].filter(function (el) {
 			  return (el.start <= maxExtent && el.start >= minExtent) ||
 			  (el.end <= maxExtent && el.end >= minExtent);});
-	    			console.log("numitems " + filteredData.length);
+	    			console.log("numitems " + filteredApps.length);
 
 
 
@@ -335,7 +346,7 @@ $(document).ready(function() {
 		var ebars = eTimeline.append("g")
 			.attr("class","ebarContainer")
 		  .selectAll(".ebar")
-			.data(filteredData, function(d) {return d.id; });
+			.data(filteredApps, function(d) {return d.id; });
 
 		//draw the actual expanded timeline bars
 		ebars.enter().append("rect")
@@ -347,7 +358,7 @@ $(document).ready(function() {
 		.attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
 			  .attr("height", barHeight)
 			  .on("mouseover", function(d) {
-					tooltip.html(lanes[d.appid-1].name)
+					tooltip.html(apps[d.appid-1].name)
 						 .style("left", (d3.event.pageX) + "px")
 						 .style("top", (d3.event.pageY - 28) + "px")
 						 .style("visibility", "visible");
@@ -381,5 +392,5 @@ $(document).ready(function() {
 		if (brush.empty()) renderTimeline();
 	}
 
-	
+
 });

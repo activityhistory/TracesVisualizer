@@ -43,8 +43,14 @@ h1{
 	height: 480px;
 	background-color: #ddd;
 }
-#stats{
+#header{
+	height: 45px;
+	margin-bottom: 10px;
+}
+#stats p{
 	color: #666;
+	margin-top: 0em;
+	margin-bottom: 0.25em;
 }
 .axis text {
 	font: 12px sans-serif;
