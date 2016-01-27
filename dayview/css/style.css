@@ -6,6 +6,10 @@ h1{
 	font-size: 2em;
 	font-weight: 300;
 }
+span.keyword{
+	margin-right: 10px;
+	float: left;
+}
 #datepicker{
 	padding: 5px 10px 5px;
 	margin: 0px 10px 10px 0px;
@@ -42,6 +46,10 @@ h1{
 	padding: 10px;
 	height: 480px;
 	background-color: #ddd;
+}
+#keywordParagraph{
+	margin: 0px;
+	line-height: 150%;
 }
 #header{
 	height: 45px;
