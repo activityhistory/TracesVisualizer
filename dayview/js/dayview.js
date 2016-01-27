@@ -104,7 +104,6 @@ $(document).ready(function() {
 				.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
 				.range([m[3],w]);  //sets the scale's output range to the specified array of values
 
-
 				// prepare data
 				data = json;
 				apps = data["apps"];
@@ -123,12 +122,48 @@ $(document).ready(function() {
 					return (el.time <= timeEnd && el.time >= timeBegin);
 				});
 
-				// get # of words typed
-				numWords = 0
+				//get most used words by application
+				wordsByApp = new Array(apps.length).join(".").split(".");
 				for (i = 0; i < filteredWords.length; i++) {
-					numWords += Math.floor(filteredWords[i].text.length / 5);
+					wordsByApp[filteredWords[i].app] += (" " + filteredWords[i].text)
 				}
 
+				var wordcnt = function(s){
+					var hist = {};
+					var words = s.split(/[\s*\.*\,\;\+?\#\|:\-\/\\\[\]\(\)\{\}$%&0-9*]/);
+					for(j=0; j<words.length; j++){
+						if(words[j].length>0){
+							hist[words[j]] ? hist[words[j]]+=1 : hist[words[j]]=1;
+						}
+					}
+					return hist;
+				};
+
+				countsByApp = new Array(apps.length).join(".").split(".");
+				for(i = 0; i<wordsByApp.length; i++) {
+					countsByApp[i] = wordcnt(wordsByApp[i]);
+				}
+
+				//get wordCount
+				totalWordCount = 0
+				for(i = 0; i<countsByApp.length; i++) {
+					for(var key in countsByApp[i]){
+						totalWordCount += countsByApp[i][key]
+					}
+				}
+
+				//get word count in form we can use for d3
+				sortedCountsByApp = new Array(apps.length).join(".").split(".");
+				for(i=0; i<countsByApp.length; i++){
+					var sortedCounts = [];
+					for(var word in countsByApp[i]){
+						sortedCounts.push([word, countsByApp[i][word]])
+	  				  	sortedCounts.sort(function(a, b) {return a[1] - b[1]})
+					}
+					sortedCountsByApp[i] = sortedCounts
+				}
+
+				//write summary data to the stats div
 				if(filteredApps.length == 0){
 				  	$('#stats').html("<p>You have no recordings for this date<\/p>")
 				}
@@ -141,7 +176,7 @@ $(document).ready(function() {
 				  	recordedTime = recordedTime.toFixed(1)
 				  	$('#stats').html(
 					  	"<p>" + recordedTime.toString() + " hours recorded<\/p>\
-					  	<p>" + numWords + " words typed<\/p>")
+					  	<p>" + totalWordCount + " words typed<\/p>")
 				}
 
 				 //TODO: decide which sections need to be functions and which can be main
