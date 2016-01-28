@@ -151,8 +151,8 @@ $(document).ready(function() {
 			//get total word count across all application
 			totalWordCount = 0
 			for(i = 0; i<countsByApp.length; i++) {
-				for(var key in countsByApp[i]){
-					totalWordCount += countsByApp[i][key]
+				for(var key in countsByApp[i]){					
+					totalWordCount += parseInt(countsByApp[i][key])
 				}
 			}
 
