@@ -254,21 +254,21 @@ $(document).ready(function() {
 						.data(appsByTime);
 
 				abars.enter().append("rect")
-						.attr("class", function(d) {return ".abar .abar" + d.value})
+						.attr("class", function(d) {return "abar abar" + d.value})
 						.attr("x", function(d) {return x(d.start);})
 						.attr("y", -4)
-						.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
+						.attr("width", function(d) {return ( x(d.end) - x(d.start) - 1.5); }) //x = value of scaled(end) - scaled(start) - border width
 						.attr("height", barHeight + 8)
 						.style("fill", function(d){return activityColors[d.value % 6]})
 						.style("fill-opacity", 0.2)
 						.style("stroke", function(d){return activityColors[d.value % 6]})
 						.style("stroke-width", 1.5)
 						.on("mouseover", function(d) {
-							d3.select(this).style("fill-opacity", 0.3);
+							d3.selectAll(".abar" + d.value).style("fill-opacity", 0.4);
 						})
 						.on("mouseout", function(d) {
-							d3.select(this).style("fill-opacity", 0.1);
-						})
+							d3.selectAll(".abar" + d.value).style("fill-opacity", 0.2);
+						});
 
 				abars.exit().remove();
 
@@ -287,21 +287,25 @@ $(document).ready(function() {
 								 .style("left", (d3.event.pageX) + "px")
 								 .style("top", (d3.event.pageY - 28) + "px")
 								 .style("visibility", "visible");
-								 //get image
-								 var t = x.invert(d3.event.pageX)
-								 var result = $.grep(images, function(e){ return e.time >= t; });
-								 if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-								 else{$('#screenshot').attr("src","")}})
-					  .on("mousemove", function(d) {
+							//get image
+							var t = x.invert(d3.event.pageX)
+							var result = $.grep(images, function(e){ return e.time >= t; });
+							if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+							else{$('#screenshot').attr("src","")}
+							value = getCbarValue(d, appsByTime);
+							d3.selectAll(".abar" + value).style("fill-opacity", 0.4);})
+						.on("mousemove", function(d) {
 							tooltip.style("left", (d3.event.pageX) + "px")
 								 .style("top", (d3.event.pageY - 28) + "px");
 							var t = x.invert(d3.event.pageX)
 							var result = $.grep(images, function(e){ return e.time >= t; });
 							if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
 							else{$('#screenshot').attr("src","")}})
-					  .on("mouseout", function(d) {
+						.on("mouseout", function(d) {
 							tooltip.style("visibility", "hidden");
-							$('#screenshot').attr("src","")});
+							$('#screenshot').attr("src","")
+							value = getCbarValue(d, appsByTime);
+							d3.selectAll(".abar" + value).style("fill-opacity", 0.2);});
 
 				cbars.exit().remove();
 			}
@@ -508,5 +512,15 @@ $(document).ready(function() {
 		}
 
 		return appsByTime;
+	}
+
+	function getCbarValue(d, appsByTime) {
+		for (var i = 0; i < appsByTime.length; i++) {
+			el = appsByTime[i]
+			if(d.start > el.start && d.start < el.end) {
+				return el.value;
+			}
+		}
+		return -1;
 	}
 });	//end (document).ready()
