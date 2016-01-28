@@ -4,7 +4,8 @@ $(document).ready(function() {
 	var m = [12, 12, 12, 0]; //top right bottom left  margins
 	var w = window.innerWidth - m[1] - m[3] - 4; //replace with actual window width
 	var barHeight = 20;
-	var cHeight = 32; //height of compressed timeline
+	var tickOffset = barHeight + 5
+	var cHeight = 42; //height of compressed timeline
 	var eHeight = 500; //height of expanded timeline
 	var kHeight = 400;
 	var eBarPadding = 2;
@@ -40,7 +41,7 @@ $(document).ready(function() {
 
 	//container for main compressed timeline
 	var cTimeline = main.append("g")
-		.attr("transform", "translate(" + m[3] + ",0)")//start @ x = 75
+		.attr("transform", "translate(" + m[3] + ",5)")//start @ x = 0, y = 5
 		.attr("width", w)
 		.attr("height", cHeight)
 		.attr("class", "cTimeline");
@@ -233,7 +234,7 @@ $(document).ready(function() {
 
 				main.append("g") //redraw the timeline axis
 					  .attr("class", "axis")
-					  .attr("transform", "translate("+m[3]+"," + barHeight + ")")
+					  .attr("transform", "translate("+m[3]+"," + tickOffset + ")")
 					  .call(xAxis)
 					  .selectAll("text") //move text for tick marks
 					  .attr("y", 8)
@@ -248,6 +249,28 @@ $(document).ready(function() {
 			//********************************************************
 			function drawCompressed(){
 				cTimeline.selectAll("g").remove(); //remove bars for redraw
+
+				abars = cTimeline.append("g").selectAll(".abar")
+						.data(appsByTime);
+
+				abars.enter().append("rect")
+						.attr("class", function(d) {return ".abar .abar" + d.value})
+						.attr("x", function(d) {return x(d.start);})
+						.attr("y", -4)
+						.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
+						.attr("height", barHeight + 8)
+						.style("fill", function(d){return activityColors[d.value % 6]})
+						.style("fill-opacity", 0.2)
+						.style("stroke", function(d){return activityColors[d.value % 6]})
+						.style("stroke-width", 1.5)
+						.on("mouseover", function(d) {
+							d3.select(this).style("fill-opacity", 0.3);
+						})
+						.on("mouseout", function(d) {
+							d3.select(this).style("fill-opacity", 0.1);
+						})
+
+				abars.exit().remove();
 
 				cbars = cTimeline.append("g").selectAll(".cbar")
 					  .data(filteredApps);
@@ -281,20 +304,6 @@ $(document).ready(function() {
 							$('#screenshot').attr("src","")});
 
 				cbars.exit().remove();
-
-				abars = cTimeline.append("g").selectAll(".abar")
-						.data(appsByTime);
-
-				abars.enter().append("rect")
-						.attr("class", ".abar")
-						.attr("x", function(d) {return x(d.start);})
-						.attr("y", 0)
-						.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
-						.attr("height", barHeight + 10)
-						.style("fill", function(d){return activityColors[d.value % 6]})
-						.style("fill-opacity", 0.2)
-						.style("stroke", function(d){return activityColors[d.value % 6]})
-						.style("stroke-width", 1.5)
 			}
 
 			drawExpanded();
