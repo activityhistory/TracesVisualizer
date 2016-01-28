@@ -166,7 +166,7 @@ $(document).ready(function() {
 				var sortedCounts = [];
 				for(var word in countsByApp[i]){
 					sortedCounts.push([word, countsByApp[i][word]])
-  				  	sortedCounts.sort(function(a, b) {return b[1] - a[1]})
+					sortedCounts.sort(function(a, b) {return b[1] - a[1]})
 				}
 				sortedCountsByApp[i] = sortedCounts
 			}
@@ -197,18 +197,18 @@ $(document).ready(function() {
 			//write summary data to the top of the page
 			//********************************************************
 			if(filteredApps.length == 0){
-			  	$('#stats').html("<p>You have no recordings for this date<\/p>")
+				$('#stats').html("<p>You have no recordings for this date<\/p>")
 			}
 			else{
-			  	var recordedTime = 0.0
-			  	for (i = 0; i < filteredApps.length; i++) {
+				var recordedTime = 0.0
+				for (i = 0; i < filteredApps.length; i++) {
 					recordedTime += filteredApps[i].end - filteredApps[i].start
-			 	}
-			  	recordedTime = (recordedTime / 3600)
-			  	recordedTime = recordedTime.toFixed(1)
-			  	$('#stats').html(
-				  	"<p>" + recordedTime.toString() + " hours recorded<\/p>\
-				  	<p>" + totalWordCount + " words typed<\/p>")
+				}
+				recordedTime = (recordedTime / 3600)
+				recordedTime = recordedTime.toFixed(1)
+				$('#stats').html(
+					"<p>" + recordedTime.toString() + " hours recorded<\/p>\
+					<p>" + totalWordCount + " words typed<\/p>")
 			}
 
 			//TODO: decide which sections need to be functions and which can be main
@@ -223,24 +223,24 @@ $(document).ready(function() {
 				t2.setDate(t2.getDate() + 1);
 
 				var xScale = d3.time.scale()
-					 .domain([t1, t2])
-					 .range([m[3], w]);
+					.domain([t1, t2])
+					.range([m[3], w]);
 
 				var xAxis = d3.svg.axis()
-					 .scale(xScale)
-					 .orient("bottom");
+					.scale(xScale)
+					.orient("bottom");
 
 				d3.selectAll(".axis").remove(); //remove any existing axis
 
 				main.append("g") //redraw the timeline axis
-					  .attr("class", "axis")
-					  .attr("transform", "translate("+m[3]+"," + tickOffset + ")")
-					  .call(xAxis)
-					  .selectAll("text") //move text for tick marks
-					  .attr("y", 8)
-					  .attr("x", 0)
-					  .style("text-anchor", "center")
-					  .style("fill", "#666");
+					.attr("class", "axis")
+					.attr("transform", "translate("+m[3]+"," + tickOffset + ")")
+					.call(xAxis)
+					.selectAll("text") //move text for tick marks
+					.attr("y", 8)
+					.attr("x", 0)
+					.style("text-anchor", "center")
+					.style("fill", "#666");
 			}
 
 			drawCompressed();
@@ -254,58 +254,58 @@ $(document).ready(function() {
 						.data(appsByTime);
 
 				abars.enter().append("rect")
-						.attr("class", function(d) {return "abar abar" + d.value})
-						.attr("x", function(d) {return x(d.start);})
-						.attr("y", -4)
-						.attr("width", function(d) {return ( x(d.end) - x(d.start) - 1.5); }) //x = value of scaled(end) - scaled(start) - border width
-						.attr("height", barHeight + 8)
-						.style("fill", function(d){return activityColors[d.value % 6]})
-						.style("fill-opacity", 0.2)
-						.style("stroke", function(d){return activityColors[d.value % 6]})
-						.style("stroke-width", 1.5)
-						.on("mouseover", function(d) {
-							d3.selectAll(".abar" + d.value).style("fill-opacity", 0.4);
-						})
-						.on("mouseout", function(d) {
-							d3.selectAll(".abar" + d.value).style("fill-opacity", 0.2);
-						});
+					.attr("class", function(d) {return "abar abar" + d.value})
+					.attr("x", function(d) {return x(d.start);})
+					.attr("y", -4)
+					.attr("width", function(d) {return ( x(d.end) - x(d.start) - 1.5); }) //x = value of scaled(end) - scaled(start) - border width
+					.attr("height", barHeight + 8)
+					.style("fill", function(d){return activityColors[d.value % 6]})
+					.style("fill-opacity", 0.2)
+					.style("stroke", function(d){return activityColors[d.value % 6]})
+					.style("stroke-width", 1.5)
+					.on("mouseover", function(d) {
+						d3.selectAll(".abar" + d.value).style("fill-opacity", 0.4);
+					})
+					.on("mouseout", function(d) {
+						d3.selectAll(".abar" + d.value).style("fill-opacity", 0.2);
+					});
 
 				abars.exit().remove();
 
 				cbars = cTimeline.append("g").selectAll(".cbar")
-					  .data(filteredApps);
+					.data(filteredApps);
 
 				cbars.enter().append("rect")
-					  .attr("class", 'cbar')
-					  .attr("x", function(d) {return x(d.start);})   //x = scaled value of start time
-					  .attr("y", 0)
-					  .attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
-					  .attr("height", barHeight)
-					  .style("fill", function(d){return timelineColors[d.appid % 12]})
-					  .on("mouseover", function(d) {
-							tooltip.html(apps[d.appid-1].name)
-								 .style("left", (d3.event.pageX) + "px")
-								 .style("top", (d3.event.pageY - 28) + "px")
-								 .style("visibility", "visible");
+					.attr("class", 'cbar')
+					.attr("x", function(d) {return x(d.start);})   //x = scaled value of start time
+					.attr("y", 0)
+					.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
+					.attr("height", barHeight)
+					.style("fill", function(d){return timelineColors[d.appid % 12]})
+					.on("mouseover", function(d) {
+						tooltip.html(apps[d.appid-1].name)
+							.style("left", (d3.event.pageX) + "px")
+							.style("top", (d3.event.pageY - 28) + "px")
+							.style("visibility", "visible");
 							//get image
-							var t = x.invert(d3.event.pageX)
-							var result = $.grep(images, function(e){ return e.time >= t; });
-							if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-							else{$('#screenshot').attr("src","")}
-							value = getCbarValue(d, appsByTime);
-							d3.selectAll(".abar" + value).style("fill-opacity", 0.4);})
-						.on("mousemove", function(d) {
-							tooltip.style("left", (d3.event.pageX) + "px")
-								 .style("top", (d3.event.pageY - 28) + "px");
-							var t = x.invert(d3.event.pageX)
-							var result = $.grep(images, function(e){ return e.time >= t; });
-							if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-							else{$('#screenshot').attr("src","")}})
-						.on("mouseout", function(d) {
-							tooltip.style("visibility", "hidden");
-							$('#screenshot').attr("src","")
-							value = getCbarValue(d, appsByTime);
-							d3.selectAll(".abar" + value).style("fill-opacity", 0.2);});
+						var t = x.invert(d3.event.pageX)
+						var result = $.grep(images, function(e){ return e.time >= t; });
+						if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+						else{$('#screenshot').attr("src","")}
+						value = getCbarValue(d, appsByTime);
+						d3.selectAll(".abar" + value).style("fill-opacity", 0.4);})
+					.on("mousemove", function(d) {
+						tooltip.style("left", (d3.event.pageX) + "px")
+							.style("top", (d3.event.pageY - 28) + "px");
+						var t = x.invert(d3.event.pageX)
+						var result = $.grep(images, function(e){ return e.time >= t; });
+						if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+						else{$('#screenshot').attr("src","")}})
+					.on("mouseout", function(d) {
+						tooltip.style("visibility", "hidden");
+						$('#screenshot').attr("src","")
+						value = getCbarValue(d, appsByTime);
+						d3.selectAll(".abar" + value).style("fill-opacity", 0.2);});
 
 				cbars.exit().remove();
 			}
@@ -314,7 +314,7 @@ $(document).ready(function() {
 			//********************************************************
 			//draw expanded timeline
 			//********************************************************
-		  	function drawExpanded(){
+			function drawExpanded(){
 
 				y = d3.scale.linear()
 					.domain([0, laneLength])
@@ -324,16 +324,16 @@ $(document).ready(function() {
 
 				//draw the lane lines
 				eTimeline.append("g").selectAll(".laneLine")
-				 	.data(apps)
-				 	.enter().append("line")
+					.data(apps)
+					.enter().append("line")
 					.attr("x1", m[3])
-				 	.attr("y1", function(d, i) {return y(i);})
-				 	.attr("x2", w)
-				 	.attr("y2", function(d, i) {return y(i);})
-				 	.attr("stroke", "lightgray")
+					.attr("y1", function(d, i) {return y(i);})
+					.attr("x2", w)
+					.attr("y2", function(d, i) {return y(i);})
+					.attr("stroke", "lightgray")
 					.attr("class","laneLine");
 
-				 // not sure why we are filtering here
+				// not sure why we are filtering here
 				ebars = eTimeline.append("g")
 					.attr("class","ebarContainer")
 					.selectAll(".ebar")
@@ -341,62 +341,62 @@ $(document).ready(function() {
 
 				//draw the actual expanded timeline bars
 				ebars.enter().append("rect")
-					  .attr("class","ebar")
-					  .attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
-				.attr("x", function(d) {return x(d.start);})
-					  .style("fill", function(d) {return timelineColors[d.appid % 12]})
-					  // .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
-				.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
-					  .attr("height", barHeight)
-					  .on("mouseover", function(d) {
-							tooltip.html(apps[d.appid-1].name)
-								 .style("left", (d3.event.pageX) + "px")
-								 .style("top", (d3.event.pageY - 28) + "px")
-								 .style("visibility", "visible");
+					.attr("class","ebar")
+					.attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
+					.attr("x", function(d) {return x(d.start);})
+					.style("fill", function(d) {return timelineColors[d.appid % 12]})
+						// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
+					.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
+					.attr("height", barHeight)
+					.on("mouseover", function(d) {
+						tooltip.html(apps[d.appid-1].name)
+							.style("left", (d3.event.pageX) + "px")
+							.style("top", (d3.event.pageY - 28) + "px")
+							.style("visibility", "visible");
 							//get image
-							var t = x.invert(d3.event.pageX)
-							var result = $.grep(images, function(e){ return e.time >= t; });
-							if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-							else{$('#screenshot').attr("src","")}})
-					  .on("mousemove", function(d) {
-							tooltip.style("left", (d3.event.pageX) + "px")
-								 .style("top", (d3.event.pageY - 28) + "px");
-							var t = x.invert(d3.event.pageX)
-							var result = $.grep(images, function(e){ return e.time >= t; });
-							if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-							else{$('#screenshot').attr("src","")}})
-					  .on("mouseout", function(d) {
-							tooltip.style("visibility", "hidden");
-							$('#screenshot').attr("src","")});
+						var t = x.invert(d3.event.pageX)
+						var result = $.grep(images, function(e){ return e.time >= t; });
+						if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+						else{$('#screenshot').attr("src","")}})
+					.on("mousemove", function(d) {
+						tooltip.style("left", (d3.event.pageX) + "px")
+							.style("top", (d3.event.pageY - 28) + "px");
+						var t = x.invert(d3.event.pageX)
+						var result = $.grep(images, function(e){ return e.time >= t; });
+						if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+						else{$('#screenshot').attr("src","")}})
+					.on("mouseout", function(d) {
+						tooltip.style("visibility", "hidden");
+						$('#screenshot').attr("src","")});
 
 				ebars.exit().remove();
 
 				//add text for app labels
 				eTimeline.append("g").selectAll(".laneText")
-					 .data(apps)
-					 .enter().append("text")
-					 .text(function(d) {return d.name;})
-					 .attr("x", m[3])
-					 .attr("y", function(d, i) {return y(i)+10;})
-					 .attr("dy", ".5ex")
-					 .attr("text-anchor", "start")
-							.style("font-size", "11px")
-							.style("fill", '#666')
-					// .style("font-size", function(d) { return (Math.min( 12, Math.min(m[3], (m[3] - 8) / this.getComputedTextLength() * 24)))+ "px"; })  //scale font-size to fit in margin
-					 		.attr("class", "laneText");
+					.data(apps)
+					.enter().append("text")
+					.text(function(d) {return d.name;})
+					.attr("x", m[3])
+					.attr("y", function(d, i) {return y(i)+10;})
+					.attr("dy", ".5ex")
+					.attr("text-anchor", "start")
+					.style("font-size", "11px")
+					.style("fill", '#666')
+						// .style("font-size", function(d) { return (Math.min( 12, Math.min(m[3], (m[3] - 8) / this.getComputedTextLength() * 24)))+ "px"; })  //scale font-size to fit in margin
+					.attr("class", "laneText");
 			}
 
 			drawKeywords();
 			//********************************************************
 			//draw keywords
 			//********************************************************
-		 	function drawKeywords(){
+			function drawKeywords(){
 
 				countsOverOne = totalSortedCounts.filter(function (el) { return (el[1] > 1);});
 
 				textSize = d3.scale.log()
 					.domain([1, countsOverOne[0][1]])
-		    		.range([12, 36]);
+					.range([12, 36]);
 
 				//console.log(parseInt(textSize(6)))
 
@@ -412,7 +412,7 @@ $(document).ready(function() {
 
 				keywords.exit().remove();
 
- 				//keywords.text(function(d) {return apps[d.app-1].name+": " +d.text;});
+				//keywords.text(function(d) {return apps[d.app-1].name+": " +d.text;});
 
 
 			}
@@ -429,51 +429,51 @@ $(document).ready(function() {
 		//scale for brushed timeline
 		var xb = d3.scale.linear()
 			.domain([minExtent, maxExtent])
-    		.range([0, w]);
+			.range([0, w]);
 
 		//get new data based on brush extents
-	  	filteredApps = data['appevents'].filter(function (el) {
+		filteredApps = data['appevents'].filter(function (el) {
 			return (el.start <= maxExtent && el.start >= minExtent) ||
 				(el.end <= maxExtent && el.end >= minExtent);
 		});
-	    console.log("numitems " + filteredApps.length);
+		console.log("numitems " + filteredApps.length);
 
 		eTimeline.selectAll(".ebarContainer").remove(); //remove ebars
 
 		var ebars = eTimeline.append("g")
 			.attr("class","ebarContainer")
-		  .selectAll(".ebar")
+			.selectAll(".ebar")
 			.data(filteredApps, function(d) {return d.id; });
 
 		//draw the actual expanded timeline bars
 		ebars.enter().append("rect")
-			  .attr("class","ebar")
-			  .attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
+			.attr("class","ebar")
+			.attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
 		.attr("x", function(d) {return xb(d.start);})
-			  .style("fill", function(d) {return timelineColors[d.appid % 12]})
-			  // .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
+			.style("fill", function(d) {return timelineColors[d.appid % 12]})
+			// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
 		.attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
-			  .attr("height", barHeight)
-			  .on("mouseover", function(d) {
-					tooltip.html(apps[d.appid-1].name)
-						 .style("left", (d3.event.pageX) + "px")
-						 .style("top", (d3.event.pageY - 28) + "px")
-						 .style("visibility", "visible");
-					//get image
-					var t = x.invert(d3.event.pageX)
-					var result = $.grep(images, function(e){ return e.time >= t; });
-					if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-					else{$('#screenshot').attr("src","")}})
-			  .on("mousemove", function(d) {
-					tooltip.style("left", (d3.event.pageX) + "px")
-						 .style("top", (d3.event.pageY - 28) + "px");
-					var t = x.invert(d3.event.pageX)
-					var result = $.grep(images, function(e){ return e.time >= t; });
-					if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-					else{$('#screenshot').attr("src","")}})
-			  .on("mouseout", function(d) {
-					tooltip.style("visibility", "hidden");
-					$('#screenshot').attr("src","")});
+			.attr("height", barHeight)
+			.on("mouseover", function(d) {
+				tooltip.html(apps[d.appid-1].name)
+					.style("left", (d3.event.pageX) + "px")
+					.style("top", (d3.event.pageY - 28) + "px")
+					.style("visibility", "visible");
+				//get image
+				var t = x.invert(d3.event.pageX)
+				var result = $.grep(images, function(e){ return e.time >= t; });
+				if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+				else{$('#screenshot').attr("src","")}})
+			.on("mousemove", function(d) {
+				tooltip.style("left", (d3.event.pageX) + "px")
+					.style("top", (d3.event.pageY - 28) + "px");
+				var t = x.invert(d3.event.pageX)
+				var result = $.grep(images, function(e){ return e.time >= t; });
+				if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
+				else{$('#screenshot').attr("src","")}})
+			.on("mouseout", function(d) {
+				tooltip.style("visibility", "hidden");
+				$('#screenshot').attr("src","")});
 
 		//ebars.exit().remove();
 	}
