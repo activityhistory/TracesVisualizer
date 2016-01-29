@@ -30,6 +30,7 @@ span.keyword{
 }
 #imageContainer{
 	float:left;
+	overflow: hidden;
 	width: 800px;
 	height: 500px;
 	margin-right: 10px;
@@ -76,6 +77,10 @@ span.keyword{
 	stroke-width: 1px;
 	shape-rendering: crispEdges;
 }
+.keyframe{
+	max-height: 160px;
+	margin: 0px 10px 10px 0px;
+}
 .timelineBackground{
 	fill: #ddd;
 	shape-rendering: crispEdges;
@@ -89,7 +94,6 @@ span.keyword{
 .main{
 	margin-top: 10px;
 }
-
 .brush .extent {
   stroke: #000;
   fill-opacity: .125;

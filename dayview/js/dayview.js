@@ -1,36 +1,29 @@
 $(document).ready(function() {
 
-	//set dimensions
-	var m = [12, 12, 12, 0]; //top right bottom left  margins
-	var w = window.innerWidth - m[1] - m[3] - 4; //replace with actual window width
+// -------------------------------------------------
+// set constants
+// -------------------------------------------------
+
+	// set dimensions
+	var m = [12, 12, 12, 0]; //top right bottom left margins
+	var w = window.innerWidth - m[1] - m[3] - 4;
 	var barHeight = 20;
 	var tickOffset = barHeight + 5
 	var cHeight = 42; //height of compressed timeline
 	var eHeight = 500; //height of expanded timeline
-	var kHeight = 400;
+	var kHeight = 400; //height of keyword area
 	var eBarPadding = 2;
-	var timelineColors = ['#2F81AE','#A42510','#DE9D18','#256384','#C0400D','#E1C020','#1C4766','#DD5C00','#96AC53','#132D45','#DE7C0F','#599780']
-	var activityColors = ['#4394F7','#60B632','#EE7C15','#A24DDA','#F2CC20', '#E4454C']
 
-	//add datepicker
-	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(date) {renderTimeline();} });
-	$("#datepicker").datepicker("setDate", "0");
-	//get start and end time of the day we are viewing
-	selectedDate = $( "#datepicker" ).datepicker("getDate");
-	timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
-	timeEnd = timeBegin + 24*60*60; //show one day of data
+	// set colors
+	var timelineColors = ['#2F81AE','#A42510','#DE9D18','#256384','#C0400D',
+							'#E1C020','#1C4766','#DD5C00','#96AC53','#132D45',
+							'#DE7C0F','#599780']
+	var activityColors = ['#4394F7','#60B632','#EE7C15','#A24DDA','#F2CC20',
+							'#E4454C']
 
-	//set horizontal scale
-	var x = d3.scale.linear()
-		.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
-		.range([m[3],w]);  //sets the scale's output range to the specified array of values
-
-	//********************************************************
-	//draw containers
-	//********************************************************
-	// container for tooltip
-	var tooltip = d3.select("body").append("div")
-		.attr("class", "tooltip");
+// -------------------------------------------------
+// draw containers
+// -------------------------------------------------
 
 	// main display svg
 	var main = d3.select("body")
@@ -39,7 +32,7 @@ $(document).ready(function() {
 		.attr("height", cHeight + eHeight + kHeight + m[0] + m[2])
 		.attr("class", "main");
 
-	//container for main compressed timeline
+	// container for main compressed timeline
 	var cTimeline = main.append("g")
 		.attr("transform", "translate(" + m[3] + ",5)")//start @ x = 0, y = 5
 		.attr("width", w)
@@ -56,15 +49,24 @@ $(document).ready(function() {
 
 	//container for expanded timeline
 	var eTimeline = main.append("g")
-		.attr("transform", "translate(" + m[3] + "," + (cHeight + m[0]) + ")")//start @ x = 75, y = under cTimeline
+		.attr("transform", "translate(" + m[3] + "," + (cHeight + m[0]) + ")") //start @ x = 75, y = under cTimeline
 		.attr("width", w)
 		.attr("height", eHeight)
 		.attr("class", "eTimeline");
 
-	//svg container for keyword
-	// var keywordSVG = d3.select("#detailsContainer").append('svg')
-	// 	.attr('height', '100%');
-	// var keywordGroup = keywordSVG.append('g');
+	// container for tooltip
+	var tooltip = d3.select("body").append("div")
+		.attr("class", "tooltip");
+
+	// add jQuery datepicker
+	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(date){renderTimeline();} });
+	$("#datepicker").datepicker("setDate", "0");
+
+	//TODO do we need to calculate this yet, or can we do it in renderTimeline
+	//get start and end time of the day we are viewing
+	selectedDate = $("#datepicker").datepicker("getDate");
+	timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
+	timeEnd = timeBegin + 24*60*60; //show one day of data
 
   //svg brush elements
 	// var brush = d3.svg.brush()
@@ -84,9 +86,9 @@ $(document).ready(function() {
 	//DRAW ALL THE THINGS!
 	renderTimeline();
 
-	//-------------------------------------------------
-	//renders both timelines
-	//-------------------------------------------------
+// -------------------------------------------------
+// renders both timelines
+// -------------------------------------------------
 	function renderTimeline(){
 
 		//get time again -- may have changed
@@ -98,15 +100,14 @@ $(document).ready(function() {
 		d3.json("../extract.json", function(error, json){
 			if (error) return console.warn(error);
 
-
-			//not sure why this needs to be declared again ---ARF investigating
+			//not sure why this needs to be declared again - ARF investigating
 			var x = d3.scale.linear()
-				.domain([timeBegin, timeEnd]) //sets the scale's input domain to the specified array of numbers
-				.range([m[3],w]);  //sets the scale's output range to the specified array of values
+				.domain([timeBegin, timeEnd])
+				.range([m[3],w]);
 
-			//********************************************************
-			//wrangle the data
-			//********************************************************
+		// -------------------------------------------------
+		// wrangle the data
+		// -------------------------------------------------
 			data = json;
 			apps = data["apps"];
 			items = data["appevents"];
@@ -114,16 +115,16 @@ $(document).ready(function() {
 			words = data['words'];
 			laneLength = apps.length;
 
-			//filter app data for the date
+			// filter app data for the date
 			filteredApps = items.filter(function (el) {
 				return (el.start <= timeEnd && el.start >= timeBegin) ||
 				(el.end <= timeEnd && el.end >= timeBegin);
 			});
 
-			//get most used applications in time slices
+			// get most used applications in time slices
 			appsByTime = calculateActivity(filteredApps, timeBegin, timeEnd);
 
-			//get only text typed today
+			// get only text typed today
 			filteredWords = words.filter(function (el) {
 				return (el.time <= timeEnd && el.time >= timeBegin);
 			});
@@ -155,7 +156,7 @@ $(document).ready(function() {
 			//get total word count across all application
 			totalWordCount = 0
 			for(i = 0; i<countsByApp.length; i++) {
-				for(var key in countsByApp[i]){					
+				for(var key in countsByApp[i]){
 					totalWordCount += parseInt(countsByApp[i][key])
 				}
 			}
@@ -193,9 +194,9 @@ $(document).ready(function() {
 			}
 			totalSortedCounts.sort(function(a, b) {return b[1] - a[1]})
 
-			//********************************************************
+			// -------------------------------------------------
 			//write summary data to the top of the page
-			//********************************************************
+			// -------------------------------------------------
 			if(filteredApps.length == 0){
 				$('#stats').html("<p>You have no recordings for this date<\/p>")
 			}
@@ -214,9 +215,9 @@ $(document).ready(function() {
 			//TODO: decide which sections need to be functions and which can be main
 
 			drawAxis();
-			//********************************************************
-			//draw main timeline axis
-			//********************************************************
+		// -------------------------------------------------
+		//draw main timeline axis
+		// -------------------------------------------------
 			function drawAxis(){
 				var t1 = selectedDate;
 				var t2 = new Date(t1.getTime());
@@ -244,9 +245,9 @@ $(document).ready(function() {
 			}
 
 			drawCompressed();
-			//********************************************************
-			//draw compressed timeline
-			//********************************************************
+		// -------------------------------------------------
+		// draw compressed timeline
+		// -------------------------------------------------
 			function drawCompressed(){
 				cTimeline.selectAll("g").remove(); //remove bars for redraw
 
@@ -282,38 +283,17 @@ $(document).ready(function() {
 					.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
 					.attr("height", barHeight)
 					.style("fill", function(d){return timelineColors[d.appid % 12]})
-					.on("mouseover", function(d) {
-						tooltip.html(apps[d.appid-1].name)
-							.style("left", (d3.event.pageX) + "px")
-							.style("top", (d3.event.pageY - 28) + "px")
-							.style("visibility", "visible");
-							//get image
-						var t = x.invert(d3.event.pageX)
-						var result = $.grep(images, function(e){ return e.time >= t; });
-						if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-						else{$('#screenshot').attr("src","")}
-						value = getCbarValue(d, appsByTime);
-						d3.selectAll(".abar" + value).style("fill-opacity", 0.4);})
-					.on("mousemove", function(d) {
-						tooltip.style("left", (d3.event.pageX) + "px")
-							.style("top", (d3.event.pageY - 28) + "px");
-						var t = x.invert(d3.event.pageX)
-						var result = $.grep(images, function(e){ return e.time >= t; });
-						if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-						else{$('#screenshot').attr("src","")}})
-					.on("mouseout", function(d) {
-						tooltip.style("visibility", "hidden");
-						$('#screenshot').attr("src","")
-						value = getCbarValue(d, appsByTime);
-						d3.selectAll(".abar" + value).style("fill-opacity", 0.2);});
+					.on("mouseover", function(d){ barMouseover(d); })
+					.on("mousemove", function(d){ barMousemove(); })
+					.on("mouseout", function(d){ barMouseout(); });
 
 				cbars.exit().remove();
 			}
 
 			drawExpanded();
-			//********************************************************
-			//draw expanded timeline
-			//********************************************************
+		// -------------------------------------------------
+		//draw expanded timeline
+		// -------------------------------------------------
 			function drawExpanded(){
 
 				y = d3.scale.linear()
@@ -348,26 +328,9 @@ $(document).ready(function() {
 						// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
 					.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
 					.attr("height", barHeight)
-					.on("mouseover", function(d) {
-						tooltip.html(apps[d.appid-1].name)
-							.style("left", (d3.event.pageX) + "px")
-							.style("top", (d3.event.pageY - 28) + "px")
-							.style("visibility", "visible");
-							//get image
-						var t = x.invert(d3.event.pageX)
-						var result = $.grep(images, function(e){ return e.time >= t; });
-						if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-						else{$('#screenshot').attr("src","")}})
-					.on("mousemove", function(d) {
-						tooltip.style("left", (d3.event.pageX) + "px")
-							.style("top", (d3.event.pageY - 28) + "px");
-						var t = x.invert(d3.event.pageX)
-						var result = $.grep(images, function(e){ return e.time >= t; });
-						if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-						else{$('#screenshot').attr("src","")}})
-					.on("mouseout", function(d) {
-						tooltip.style("visibility", "hidden");
-						$('#screenshot').attr("src","")});
+					.on("mouseover", function(d){ barMouseover(d); })
+					.on("mousemove", function(d){ barMousemove(); })
+					.on("mouseout", function(d){ barMouseout(); });
 
 				ebars.exit().remove();
 
@@ -387,41 +350,109 @@ $(document).ready(function() {
 			}
 
 			drawKeywords();
-			//********************************************************
-			//draw keywords
-			//********************************************************
+		// -------------------------------------------------
+		// draw keywords
+		// -------------------------------------------------
 			function drawKeywords(){
-
 				countsOverOne = totalSortedCounts.filter(function (el) { return (el[1] > 1);});
+				if(countsOverOne.length > 0){
+					textSize = d3.scale.log()
+						.domain([1, countsOverOne[0][1]])
+						.range([12, 36]);
 
-				textSize = d3.scale.log()
-					.domain([1, countsOverOne[0][1]])
-					.range([12, 36]);
+					var keywords = d3.select('#keywordParagraph').selectAll('.keyword')
+						.data(countsOverOne);
 
-				//console.log(parseInt(textSize(6)))
+					keywords.enter().append('span')
+						.attr('class', 'keyword');
 
-				var keywords = d3.select('#keywordParagraph').selectAll('.keyword')
-					.data(countsOverOne);
+					keywords.text(function(d) {return d[0];})
+						.style('color', function(d){return timelineColors[(d[2]+1) % 12];})
+						.style('font-size', function(d){return String(parseInt(textSize(d[1]))) + "px"});
 
-				keywords.enter().append('span')
-					.attr('class', 'keyword');
+					keywords.exit().remove();
+				}
+			}
 
-				keywords.text(function(d) {return d[0];})
-					.style('color', function(d){return timelineColors[(d[2]+1) % 12];})
-					.style('font-size', function(d){return String(parseInt(textSize(d[1]))) + "px"});
+			drawKeyframes();
+		// -------------------------------------------------
+		// draw keywords
+		// -------------------------------------------------
+			function drawKeyframes(){
+				numKeyframes = 12;
+				keyframeFiles = []
+				filteredImages = $.grep(images, function(e){ return e.time >= timeBegin; });
 
-				keywords.exit().remove();
+				for(i=0; i<numKeyframes; i++){
+					ind = parseInt(i/(numKeyframes-1)*(filteredImages.length-1))
+					keyframeFiles.push(filteredImages[ind])
+				}
 
-				//keywords.text(function(d) {return apps[d.app-1].name+": " +d.text;});
+				d3.select('#screenshot').remove()
 
+				keyframes = d3.select('#imageContainer').selectAll('img')
+					.data(keyframeFiles)
 
+				keyframes.enter().append('img')
+					.attr('class', 'keyframe')
+
+				keyframes.attr('src', function(d){return d.image})
+
+				keyframes.exit().remove()
+
+				//TODO add drawKeyframes on mouseout
+			}
+
+			function barMouseover(d){
+				// get divs ready for screenshot image
+				d3.selectAll('.keyframe').remove()
+				d3.select('#imageContainer').append('img')
+					.attr('id', 'screenshot')
+					.attr('name', 'screenshot')
+
+				tooltip.html(apps[d.appid-1].name)
+					.style("left", (d3.event.pageX) + "px")
+					.style("top", (d3.event.pageY - 28) + "px")
+					.style("visibility", "visible");
+
+				// get image
+				var t = x.invert(d3.event.pageX)
+				var result = $.grep(images, function(e){ return e.time >= t; });
+				if (result.length >= 1){
+					$('#screenshot').attr("src", result[0].image)
+				}
+				else{
+					$('#screenshot').attr("src","")
+				}
+			}
+
+			function barMousemove(){
+				// move tooltip
+				tooltip.style("left", (d3.event.pageX) + "px")
+					.style("top", (d3.event.pageY - 28) + "px");
+
+				// update image
+				var t = x.invert(d3.event.pageX)
+				var result = $.grep(images, function(e){ return e.time >= t; });
+				if (result.length >= 1) {
+					$('#screenshot').attr("src", result[0].image)
+				}
+				else{
+					$('#screenshot').attr("src","")
+				}
+			}
+
+			function barMouseout(){
+				tooltip.style("visibility", "hidden");
+				d3.select('#screenshot').remove()
+				drawKeyframes();
 			}
 		});	//end d3.json
 	}	//end renderTimeline()
 
-	//-------------------------------------------------
-	//redraws expanded based on brush
-	//-------------------------------------------------
+// -------------------------------------------------
+// redraws expanded based on brush
+// -------------------------------------------------
 	function updateBrushed(){
 		var minExtent = brush.extent()[0];
 		var maxExtent = brush.extent()[1];
@@ -478,9 +509,9 @@ $(document).ready(function() {
 		//ebars.exit().remove();
 	}
 
-	//-------------------------------------------------
-	//redraws expanded if brush is empty
-	//-------------------------------------------------
+// -------------------------------------------------
+// redraws expanded if brush is empty
+// -------------------------------------------------
 	function brushEnd(){
 		//if the brush is empty, redraw the timeline based on date
 		if (brush.empty()) renderTimeline();
