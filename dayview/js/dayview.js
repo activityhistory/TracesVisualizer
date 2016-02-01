@@ -280,7 +280,7 @@ $(document).ready(function() {
 					.attr("x", function(d) {return x(d.start);})
 					.attr("y", -4)
 					.attr("width", function(d) {return ( x(d.end) - x(d.start) - 1.5); }) //x = value of scaled(end) - scaled(start) - border width
-					.attr("height", barHeight + 8)
+					.attr("height", 2)
 					.style("fill", function(d){return activityColors[d.value % 6]})
 					.style("fill-opacity", 0.2)
 					.style("stroke", function(d){return activityColors[d.value % 6]})
@@ -389,7 +389,20 @@ $(document).ready(function() {
 
 					keywords.text(function(d) {return d[0];})
 						.style('color', function(d){return timelineColors[appTimesArray.findIndex(function(v){return v[0]==(d[2])}) % 12];})
-						.style('font-size', function(d){return String(parseInt(textSize(d[1]))) + "px"});
+						.style('font-size', function(d){return String(parseInt(textSize(d[1]))) + "px"})
+						.on('mouseover', function(d){
+							tooltip.html(d[3] + ': ' + d[1])
+								.style("left", (d3.event.pageX) + "px")
+								.style("top", (d3.event.pageY - 28) + "px")
+								.style("visibility", "visible");
+						})
+						.on('mousemove', function(d){
+							tooltip.style("left", (d3.event.pageX) + "px")
+								.style("top", (d3.event.pageY - 28) + "px");
+						})
+						.on('mouseout', function(d){
+							tooltip.style("visibility", "hidden");
+						});
 
 					keywords.exit().remove();
 				}
@@ -418,6 +431,19 @@ $(document).ready(function() {
 					.attr('class', 'keyframe')
 
 				keyframes.attr('src', function(d){return d.image})
+					.on('mouseover', function(d){
+						tooltip.html(d.image.substring(31,33) + ':' + d.image.substring(33,35) + ':' + d.image.substring(35,37))
+							.style("left", (d3.event.pageX) + "px")
+							.style("top", (d3.event.pageY - 28) + "px")
+							.style("visibility", "visible");
+					})
+					.on('mousemove', function(d){
+						tooltip.style("left", (d3.event.pageX) + "px")
+							.style("top", (d3.event.pageY - 28) + "px");
+					})
+					.on('mouseout', function(d){
+						tooltip.style("visibility", "hidden");
+					});
 
 				keyframes.exit().remove()
 
