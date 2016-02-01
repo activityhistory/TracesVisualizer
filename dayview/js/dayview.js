@@ -303,7 +303,7 @@ $(document).ready(function() {
 					.attr("y", 0)
 					.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
 					.attr("height", barHeight)
-					.style("fill", function(d){return timelineColors[d.appid % 12]})
+					.style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
 					.on("mouseover", function(d){ barMouseover(d); })
 					.on("mousemove", function(d){ barMousemove(); })
 					.on("mouseout", function(d){ barMouseout(); });
