@@ -56,7 +56,7 @@ with con:
         a['name'] = row[2]
         apps.append(a)
 
-    #GET list of applications
+    #GET list of windows
     cur.execute(windowsSQL)
     rows = cur.fetchall()
     for row in rows:

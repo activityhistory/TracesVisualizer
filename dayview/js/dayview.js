@@ -121,6 +121,27 @@ $(document).ready(function() {
 				(el.end <= timeEnd && el.end >= timeBegin);
 			});
 
+			// get a list of the apps used today, ordered by duration of use
+			var appActiveTime = function(ae){
+				var hist = {};
+				for(i=0; i<ae.length; i++){
+					var time_diff = ae[i].end - ae[i].start
+					if(time_diff > 0.0){
+						hist[ae[i].appid] ? hist[ae[i].appid]+=time_diff : hist[ae[i].appid]=time_diff;
+					}
+				}
+				return hist;
+			};
+
+			appTimes = appActiveTime(filteredApps)
+
+			appTimesArray = [];
+			for(var key in appTimes){
+				appTimesArray.push([key, apps[parseInt(key)-1].name, appTimes[key]]);
+			}
+			appTimesArray.sort(function(a, b) {return b[2] - a[2]});
+
+
 			// get most used applications in time slices
 			appsByTime = calculateActivity(filteredApps, timeBegin, timeEnd);
 
@@ -188,7 +209,7 @@ $(document).ready(function() {
 			for(i=0; i<sortedCountsByApp.length; i++){
 				for(j=0; j<sortedCountsByApp[i].length; j++){
 					if($.inArray(sortedCountsByApp[i][j][0], common) == -1){ //returns -1 if value not in the array
-						totalSortedCounts.push([sortedCountsByApp[i][j][0], sortedCountsByApp[i][j][1], apps[i].id, apps[i].name])
+						totalSortedCounts.push([sortedCountsByApp[i][j][0], sortedCountsByApp[i][j][1], apps[i-1].id, apps[i-1].name])
 					}
 				}
 			}
@@ -304,7 +325,7 @@ $(document).ready(function() {
 
 				//draw the lane lines
 				eTimeline.append("g").selectAll(".laneLine")
-					.data(apps)
+					.data(appTimesArray)
 					.enter().append("line")
 					.attr("x1", m[3])
 					.attr("y1", function(d, i) {return y(i);})
@@ -322,9 +343,9 @@ $(document).ready(function() {
 				//draw the actual expanded timeline bars
 				ebars.enter().append("rect")
 					.attr("class","ebar")
-					.attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
+					.attr("y", function(d) {return y(appTimesArray.findIndex(function(v){return v[0]==d.appid})) + eBarPadding;})
 					.attr("x", function(d) {return x(d.start);})
-					.style("fill", function(d) {return timelineColors[d.appid % 12]})
+					.style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
 						// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
 					.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
 					.attr("height", barHeight)
@@ -336,15 +357,15 @@ $(document).ready(function() {
 
 				//add text for app labels
 				eTimeline.append("g").selectAll(".laneText")
-					.data(apps)
+					.data(appTimesArray)
 					.enter().append("text")
-					.text(function(d) {return d.name;})
+					.text(function(d) {return d[1];})
 					.attr("x", m[3])
 					.attr("y", function(d, i) {return y(i)+10;})
 					.attr("dy", ".5ex")
 					.attr("text-anchor", "start")
 					.style("font-size", "11px")
-					.style("fill", '#666')
+					.style("fill", function(d, i){return timelineColors[i%12];})
 						// .style("font-size", function(d) { return (Math.min( 12, Math.min(m[3], (m[3] - 8) / this.getComputedTextLength() * 24)))+ "px"; })  //scale font-size to fit in margin
 					.attr("class", "laneText");
 			}
@@ -367,7 +388,7 @@ $(document).ready(function() {
 						.attr('class', 'keyword');
 
 					keywords.text(function(d) {return d[0];})
-						.style('color', function(d){return timelineColors[(d[2]+1) % 12];})
+						.style('color', function(d){return timelineColors[appTimesArray.findIndex(function(v){return v[0]==(d[2])}) % 12];})
 						.style('font-size', function(d){return String(parseInt(textSize(d[1]))) + "px"});
 
 					keywords.exit().remove();
