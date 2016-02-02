@@ -10,8 +10,7 @@ $(document).ready(function() {
 	var barHeight = 20;
 	var tickOffset = barHeight + 5
 	var cHeight = 42; //height of compressed timeline
-	var eHeight = 500; //height of expanded timeline
-	var kHeight = 400; //height of keyword area
+	var eHeight = 100; //height of expanded timeline
 	var eBarPadding = 2;
 
 	// set colors
@@ -29,7 +28,7 @@ $(document).ready(function() {
 	var main = d3.select("body")
 		.append("svg")
 		.attr("width", w + m[1] + m[3])
-		.attr("height", cHeight + eHeight + kHeight + m[0] + m[2])
+		.attr("height", cHeight + eHeight + m[0] + m[2])
 		.attr("class", "main");
 
 	// container for main compressed timeline
@@ -43,7 +42,7 @@ $(document).ready(function() {
 	var cTimelineBackground = cTimeline.append("rect")
 		.attr("x", m[3])
 		.attr("y", 0)
-		.attr("height", barHeight)
+		//.attr("height", barHeight)
 		.attr("width", w)
 		.attr('class', 'timelineBackground');
 
@@ -141,6 +140,8 @@ $(document).ready(function() {
 			}
 			appTimesArray.sort(function(a, b) {return b[2] - a[2]});
 
+			eTimeline.attr('height', barHeight*appTimesArray.length)
+			main.attr("height", cHeight + barHeight*(appTimesArray.length+1) + m[0] + m[2])
 
 			// get most used applications in time slices
 			appsByTime = calculateActivity(filteredApps, timeBegin, timeEnd);
@@ -415,7 +416,10 @@ $(document).ready(function() {
 			function drawKeyframes(){
 				numKeyframes = 12;
 				keyframeFiles = []
-				filteredImages = $.grep(images, function(e){ return e.time >= timeBegin; });
+				filteredImages = $.grep(images, function(e){ return e.time >= timeBegin && e.time <= timeEnd; });
+				if(filteredImages.length < numKeyframes){
+					numKeyframes = filteredImages.length
+				}
 
 				for(i=0; i<numKeyframes; i++){
 					ind = parseInt(i/(numKeyframes-1)*(filteredImages.length-1))

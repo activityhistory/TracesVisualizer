@@ -30,7 +30,7 @@ span.keyword{
 }
 #imageContainer{
 	float:left;
-	overflow: hidden;
+	overflow: scroll;
 	width: 800px;
 	height: 600px;
 	margin-right: 10px;
