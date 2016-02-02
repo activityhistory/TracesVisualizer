@@ -61,28 +61,9 @@ $(document).ready(function() {
 	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(date){renderTimeline();} });
 	$("#datepicker").datepicker("setDate", "0");
 
-	//TODO do we need to calculate this yet, or can we do it in renderTimeline
-	//get start and end time of the day we are viewing
-	selectedDate = $("#datepicker").datepicker("getDate");
-	timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
-	timeEnd = timeBegin + 24*60*60; //show one day of data
-
-  //svg brush elements
-	// var brush = d3.svg.brush()
-//   .x(x) //xscale of the brush is the x scale of the chart
-//   // .extent([timeBegin, timeEnd]) //extent is current time range
-//   .on("brush", updateBrushed) //<--- on BRUSH event, only expanded timeline is redrawn
-// 	.on("brushend",brushEnd); //<-- on BRUSHEND, expanded redrawn to date frame if brush is empty
-//
-//   var area = main.append("g")
-//                 .attr("class", "x brush")
-//                 .call(brush)
-//                 .selectAll("rect")
-//                 .attr("y", 1)
-// 								.attr("height", barHeight - 1);
-//
 
 	//DRAW ALL THE THINGS!
+	setupBrush();
 	renderTimeline();
 
 // -------------------------------------------------
@@ -234,329 +215,388 @@ $(document).ready(function() {
 					<p>" + totalWordCount + " words typed<\/p>")
 			}
 
-			//TODO: decide which sections need to be functions and which can be main
 
-			drawAxis();
-		// -------------------------------------------------
-		//draw main timeline axis
-		// -------------------------------------------------
-			function drawAxis(){
-				var t1 = selectedDate;
-				var t2 = new Date(t1.getTime());
-				t2.setDate(t2.getDate() + 1);
-
-				var xScale = d3.time.scale()
-					.domain([t1, t2])
-					.range([m[3], w]);
-
-				var xAxis = d3.svg.axis()
-					.scale(xScale)
-					.orient("bottom");
-
-				d3.selectAll(".axis").remove(); //remove any existing axis
-
-				main.append("g") //redraw the timeline axis
-					.attr("class", "axis")
-					.attr("transform", "translate("+m[3]+"," + tickOffset + ")")
-					.call(xAxis)
-					.selectAll("text") //move text for tick marks
-					.attr("y", 8)
-					.attr("x", 0)
-					.style("text-anchor", "center")
-					.style("fill", "#666");
-			}
-
+			drawAxis();		
 			drawCompressed();
-		// -------------------------------------------------
-		// draw compressed timeline
-		// -------------------------------------------------
-			function drawCompressed(){
-				cTimeline.selectAll("g").remove(); //remove bars for redraw
-
-				abars = cTimeline.append("g").selectAll(".abar")
-						.data(appsByTime);
-
-				abars.enter().append("rect")
-					.attr("class", function(d) {return "abar abar" + d.value})
-					.attr("x", function(d) {return x(d.start);})
-					.attr("y", -4)
-					.attr("width", function(d) {return ( x(d.end) - x(d.start) - 1.5); }) //x = value of scaled(end) - scaled(start) - border width
-					.attr("height", 2)
-					.style("fill", function(d){return activityColors[d.value % 6]})
-					.style("fill-opacity", 0.2)
-					.style("stroke", function(d){return activityColors[d.value % 6]})
-					.style("stroke-width", 1.5)
-					.on("mouseover", function(d) {
-						d3.selectAll(".abar" + d.value).style("fill-opacity", 0.4);
-					})
-					.on("mouseout", function(d) {
-						d3.selectAll(".abar" + d.value).style("fill-opacity", 0.2);
-					});
-
-				abars.exit().remove();
-
-				cbars = cTimeline.append("g").selectAll(".cbar")
-					.data(filteredApps);
-
-				cbars.enter().append("rect")
-					.attr("class", 'cbar')
-					.attr("x", function(d) {return x(d.start);})   //x = scaled value of start time
-					.attr("y", 0)
-					.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
-					.attr("height", barHeight)
-					.style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
-					.on("mouseover", function(d){ barMouseover(d); })
-					.on("mousemove", function(d){ barMousemove(); })
-					.on("mouseout", function(d){ barMouseout(); });
-
-				cbars.exit().remove();
-			}
-
 			drawExpanded();
-		// -------------------------------------------------
-		//draw expanded timeline
-		// -------------------------------------------------
-			function drawExpanded(){
-
-				y = d3.scale.linear()
-					.domain([0, laneLength])
-					.range([0, laneLength * (barHeight + 2 * eBarPadding)]);
-
-				eTimeline.selectAll("g").remove(); //remove everything in eTimeline for redraw
-
-				//draw the lane lines
-				eTimeline.append("g").selectAll(".laneLine")
-					.data(appTimesArray)
-					.enter().append("line")
-					.attr("x1", m[3])
-					.attr("y1", function(d, i) {return y(i);})
-					.attr("x2", w)
-					.attr("y2", function(d, i) {return y(i);})
-					.attr("stroke", "lightgray")
-					.attr("class","laneLine");
-
-				// not sure why we are filtering here
-				ebars = eTimeline.append("g")
-					.attr("class","ebarContainer")
-					.selectAll(".ebar")
-					.data(filteredApps, function(d) { return d.id; });
-
-				//draw the actual expanded timeline bars
-				ebars.enter().append("rect")
-					.attr("class","ebar")
-					.attr("y", function(d) {return y(appTimesArray.findIndex(function(v){return v[0]==d.appid})) + eBarPadding;})
-					.attr("x", function(d) {return x(d.start);})
-					.style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
-						// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
-					.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
-					.attr("height", barHeight)
-					.on("mouseover", function(d){ barMouseover(d); })
-					.on("mousemove", function(d){ barMousemove(); })
-					.on("mouseout", function(d){ barMouseout(); });
-
-				ebars.exit().remove();
-
-				//add text for app labels
-				eTimeline.append("g").selectAll(".laneText")
-					.data(appTimesArray)
-					.enter().append("text")
-					.text(function(d) {return d[1];})
-					.attr("x", m[3])
-					.attr("y", function(d, i) {return y(i)+10;})
-					.attr("dy", ".5ex")
-					.attr("text-anchor", "start")
-					.style("font-size", "11px")
-					.style("fill", function(d, i){return timelineColors[i%12];})
-						// .style("font-size", function(d) { return (Math.min( 12, Math.min(m[3], (m[3] - 8) / this.getComputedTextLength() * 24)))+ "px"; })  //scale font-size to fit in margin
-					.attr("class", "laneText");
-			}
-
 			drawKeywords();
-		// -------------------------------------------------
-		// draw keywords
-		// -------------------------------------------------
-			function drawKeywords(){
-				countsOverOne = totalSortedCounts.filter(function (el) { return (el[1] > 1);});
-				if(countsOverOne.length > 0){
-					textSize = d3.scale.log()
-						.domain([1, countsOverOne[0][1]])
-						.range([12, 36]);
-
-					var keywords = d3.select('#keywordParagraph').selectAll('.keyword')
-						.data(countsOverOne);
-
-					keywords.enter().append('span')
-						.attr('class', 'keyword');
-
-					keywords.text(function(d) {return d[0];})
-						.style('color', function(d){return timelineColors[appTimesArray.findIndex(function(v){return v[0]==(d[2])}) % 12];})
-						.style('font-size', function(d){return String(parseInt(textSize(d[1]))) + "px"})
-						.on('mouseover', function(d){
-							tooltip.html(d[3] + ': ' + d[1])
-								.style("left", (d3.event.pageX) + "px")
-								.style("top", (d3.event.pageY - 28) + "px")
-								.style("visibility", "visible");
-						})
-						.on('mousemove', function(d){
-							tooltip.style("left", (d3.event.pageX) + "px")
-								.style("top", (d3.event.pageY - 28) + "px");
-						})
-						.on('mouseout', function(d){
-							tooltip.style("visibility", "hidden");
-						});
-
-					keywords.exit().remove();
-				}
-			}
-
 			drawKeyframes();
-		// -------------------------------------------------
-		// draw keywords
-		// -------------------------------------------------
-			function drawKeyframes(){
-				numKeyframes = 12;
-				keyframeFiles = []
-				filteredImages = $.grep(images, function(e){ return e.time >= timeBegin && e.time <= timeEnd; });
-				if(filteredImages.length < numKeyframes){
-					numKeyframes = filteredImages.length
-				}
+		});	//end d3.json
+	}	//end renderTimeline()
 
-				for(i=0; i<numKeyframes; i++){
-					ind = parseInt(i/(numKeyframes-1)*(filteredImages.length-1))
-					keyframeFiles.push(filteredImages[ind])
-				}
+// -------------------------------------------------
+// setup brush elemetns
+// -------------------------------------------------
+	function setupBrush(){
+		//get start and end time of the day we are viewing
+		selectedDate = $("#datepicker").datepicker("getDate");
+		timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
+		timeEnd = timeBegin + 24*60*60; //show one day of data
 
-				d3.select('#screenshot').remove()
 
-				keyframes = d3.select('#imageContainer').selectAll('img')
-					.data(keyframeFiles)
+		//LINEAR TIME SCALE for selected day <-> page width
+		var x = d3.scale.linear()
+		.domain([timeBegin, timeEnd])
+		.range([m[3],w]);
 
-				keyframes.enter().append('img')
-					.attr('class', 'keyframe')
+	  //svg brush elements
+		brush = d3.svg.brush()
+	  .x(x) //xscale of the brush is the x scale of the chart
+	  // .extent([timeBegin, timeEnd]) //extent is current time range
+		.on("brush", updateBrushed) //<--- on BRUSH event, only expanded timeline is redrawn
+		.on("brushend",brushEnd); //<-- on BRUSHEND, expanded redrawn to date frame if brush is empty
+	
+	  var area = main.append("g")
+	                .attr("class", "x brush")
+	                .call(brush)
+	                .selectAll("rect")
+	                .attr("y", 1)
+									.attr("height", barHeight - 1);
+	}
 
-				keyframes.attr('src', function(d){return d.image})
-					.on('mouseover', function(d){
-						tooltip.html(d.image.substring(31,33) + ':' + d.image.substring(33,35) + ':' + d.image.substring(35,37))
-							.style("left", (d3.event.pageX) + "px")
-							.style("top", (d3.event.pageY - 28) + "px")
-							.style("visibility", "visible");
-					})
-					.on('mousemove', function(d){
-						tooltip.style("left", (d3.event.pageX) + "px")
-							.style("top", (d3.event.pageY - 28) + "px");
-					})
-					.on('mouseout', function(d){
-						tooltip.style("visibility", "hidden");
-					});
+// -------------------------------------------------
+//draw main timeline axis
+// -------------------------------------------------
+	function drawAxis(){
+		var t1 = selectedDate;
+		var t2 = new Date(t1.getTime());
+		t2.setDate(t2.getDate() + 1);
 
-				keyframes.exit().remove()
+		var xScale = d3.time.scale()
+			.domain([t1, t2])
+			.range([m[3], w]);
 
-				//TODO add drawKeyframes on mouseout
-			}
+		var xAxis = d3.svg.axis()
+			.scale(xScale)
+			.orient("bottom");
 
-			function barMouseover(d){
-				// get divs ready for screenshot image
-				d3.selectAll('.keyframe').remove()
-				d3.select('#imageContainer').append('img')
-					.attr('id', 'screenshot')
-					.attr('name', 'screenshot')
+		d3.selectAll(".axis").remove(); //remove any existing axis
 
-				tooltip.html(apps[d.appid-1].name)
+		main.append("g") //redraw the timeline axis
+			.attr("class", "axis")
+			.attr("transform", "translate("+m[3]+"," + tickOffset + ")")
+			.call(xAxis)
+			.selectAll("text") //move text for tick marks
+			.attr("y", 8)
+			.attr("x", 0)
+			.style("text-anchor", "center")
+			.style("fill", "#666");
+	}
+// -------------------------------------------------
+// draw compressed timeline
+// -------------------------------------------------
+	function drawCompressed(){
+		
+		//LINEAR TIME SCALE for selected day <-> page width
+		var x = d3.scale.linear()
+		.domain([timeBegin, timeEnd])
+		.range([m[3],w]);
+		
+		cTimeline.selectAll("g").remove(); //remove bars for redraw
+
+		abars = cTimeline.append("g").selectAll(".abar")
+				.data(appsByTime);
+
+		abars.enter().append("rect")
+			.attr("class", function(d) {return "abar abar" + d.value})
+			.attr("x", function(d) {return x(d.start);})
+			.attr("y", -4)
+			.attr("width", function(d) {return ( x(d.end) - x(d.start) - 1.5); }) //x = value of scaled(end) - scaled(start) - border width
+			.attr("height", 2)
+			.style("fill", function(d){return activityColors[d.value % 6]})
+			.style("fill-opacity", 0.2)
+			.style("stroke", function(d){return activityColors[d.value % 6]})
+			.style("stroke-width", 1.5)
+			.on("mouseover", function(d) {
+				d3.selectAll(".abar" + d.value).style("fill-opacity", 0.4);
+			})
+			.on("mouseout", function(d) {
+				d3.selectAll(".abar" + d.value).style("fill-opacity", 0.2);
+			});
+
+		abars.exit().remove();
+
+		cbars = cTimeline.append("g").selectAll(".cbar")
+			.data(filteredApps);
+
+		cbars.enter().append("rect")
+			.attr("class", 'cbar')
+			.attr("x", function(d) {return x(d.start);})   //x = scaled value of start time
+			.attr("y", 0)
+			.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
+			.attr("height", barHeight)
+			.style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
+			.on("mouseover", function(d){ barMouseover(d); })
+			.on("mousemove", function(d){ barMousemove(); })
+			.on("mouseout", function(d){ barMouseout(); });
+
+		cbars.exit().remove();
+	}
+
+// -------------------------------------------------
+//draw expanded timeline
+// -------------------------------------------------
+	function drawExpanded(){
+
+		//LINEAR TIME SCALE for selected day <-> page width
+		var x = d3.scale.linear()
+		.domain([timeBegin, timeEnd])
+		.range([m[3],w]);
+		
+
+		y = d3.scale.linear()
+			.domain([0, laneLength])
+			.range([0, laneLength * (barHeight + 2 * eBarPadding)]);
+
+		eTimeline.selectAll("g").remove(); //remove everything in eTimeline for redraw
+
+		//draw the lane lines
+		eTimeline.append("g").selectAll(".laneLine")
+			.data(appTimesArray)
+			.enter().append("line")
+			.attr("x1", m[3])
+			.attr("y1", function(d, i) {return y(i);})
+			.attr("x2", w)
+			.attr("y2", function(d, i) {return y(i);})
+			.attr("stroke", "lightgray")
+			.attr("class","laneLine");
+
+		// not sure why we are filtering here
+		ebars = eTimeline.append("g")
+			.attr("class","ebarContainer")
+			.selectAll(".ebar")
+			.data(filteredApps, function(d) { return d.id; });
+
+		//draw the actual expanded timeline bars
+		ebars.enter().append("rect")
+			.attr("class","ebar")
+			.attr("y", function(d) {return y(appTimesArray.findIndex(function(v){return v[0]==d.appid})) + eBarPadding;})
+			.attr("x", function(d) {return x(d.start);})
+			.style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
+				// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
+			.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
+			.attr("height", barHeight)
+			.on("mouseover", function(d){ barMouseover(d); })
+			.on("mousemove", function(d){ barMousemove(); })
+			.on("mouseout", function(d){ barMouseout(); });
+
+		ebars.exit().remove();
+
+		//add text for app labels
+		eTimeline.append("g").selectAll(".laneText")
+			.data(appTimesArray)
+			.enter().append("text")
+			.text(function(d) {return d[1];})
+			.attr("x", m[3])
+			.attr("y", function(d, i) {return y(i)+10;})
+			.attr("dy", ".5ex")
+			.attr("text-anchor", "start")
+			.style("font-size", "11px")
+			.style("fill", function(d, i){return timelineColors[i%12];})
+				// .style("font-size", function(d) { return (Math.min( 12, Math.min(m[3], (m[3] - 8) / this.getComputedTextLength() * 24)))+ "px"; })  //scale font-size to fit in margin
+			.attr("class", "laneText");
+	}
+
+// -------------------------------------------------
+// draw keywords
+// -------------------------------------------------
+	function drawKeywords(){
+		countsOverOne = totalSortedCounts.filter(function (el) { return (el[1] > 1);});
+		if(countsOverOne.length > 0){
+			textSize = d3.scale.log()
+				.domain([1, countsOverOne[0][1]])
+				.range([12, 36]);
+
+			var keywords = d3.select('#keywordParagraph').selectAll('.keyword')
+				.data(countsOverOne);
+
+			keywords.enter().append('span')
+				.attr('class', 'keyword');
+
+			keywords.text(function(d) {return d[0];})
+				.style('color', function(d){return timelineColors[appTimesArray.findIndex(function(v){return v[0]==(d[2])}) % 12];})
+				.style('font-size', function(d){return String(parseInt(textSize(d[1]))) + "px"})
+				.on('mouseover', function(d){
+					tooltip.html(d[3] + ': ' + d[1])
+						.style("left", (d3.event.pageX) + "px")
+						.style("top", (d3.event.pageY - 28) + "px")
+						.style("visibility", "visible");
+				})
+				.on('mousemove', function(d){
+					tooltip.style("left", (d3.event.pageX) + "px")
+						.style("top", (d3.event.pageY - 28) + "px");
+				})
+				.on('mouseout', function(d){
+					tooltip.style("visibility", "hidden");
+				});
+
+			keywords.exit().remove();
+		}
+	}
+
+// -------------------------------------------------
+// draw keywords
+// -------------------------------------------------
+	function drawKeyframes(){
+		numKeyframes = 12;
+		keyframeFiles = []
+		filteredImages = $.grep(images, function(e){ return e.time >= timeBegin && e.time <= timeEnd; });
+		if(filteredImages.length < numKeyframes){
+			numKeyframes = filteredImages.length
+		}
+
+		for(i=0; i<numKeyframes; i++){
+			ind = parseInt(i/(numKeyframes-1)*(filteredImages.length-1))
+			keyframeFiles.push(filteredImages[ind])
+		}
+
+		d3.select('#screenshot').remove()
+
+		keyframes = d3.select('#imageContainer').selectAll('img')
+			.data(keyframeFiles)
+
+		keyframes.enter().append('img')
+			.attr('class', 'keyframe')
+
+		keyframes.attr('src', function(d){return d.image})
+			.on('mouseover', function(d){
+				tooltip.html(d.image.substring(31,33) + ':' + d.image.substring(33,35) + ':' + d.image.substring(35,37))
 					.style("left", (d3.event.pageX) + "px")
 					.style("top", (d3.event.pageY - 28) + "px")
 					.style("visibility", "visible");
-
-				// get image
-				var t = x.invert(d3.event.pageX)
-				var result = $.grep(images, function(e){ return e.time >= t; });
-				if (result.length >= 1){
-					$('#screenshot').attr("src", result[0].image)
-				}
-				else{
-					$('#screenshot').attr("src","")
-				}
-			}
-
-			function barMousemove(){
-				// move tooltip
+			})
+			.on('mousemove', function(d){
 				tooltip.style("left", (d3.event.pageX) + "px")
 					.style("top", (d3.event.pageY - 28) + "px");
-
-				// update image
-				var t = x.invert(d3.event.pageX)
-				var result = $.grep(images, function(e){ return e.time >= t; });
-				if (result.length >= 1) {
-					$('#screenshot').attr("src", result[0].image)
-				}
-				else{
-					$('#screenshot').attr("src","")
-				}
-			}
-
-			function barMouseout(){
+			})
+			.on('mouseout', function(d){
 				tooltip.style("visibility", "hidden");
-				d3.select('#screenshot').remove()
-				drawKeyframes();
-			}
-		});	//end d3.json
-	}	//end renderTimeline()
+			});
+
+		keyframes.exit().remove()
+
+		//TODO add drawKeyframes on mouseout
+	}
+
+	function barMouseover(d){
+		
+    //set x scale depending on if brushing is used
+		if (brush.empty()) {
+			var x = d3.scale.linear()
+			.domain([timeBegin, timeEnd])
+			.range([m[3],w]);
+		}
+		else {
+			var x = d3.scale.linear()
+			.domain([minExtent, maxExtent])
+			.range([0, w]);
+		}		
+		
+		// get divs ready for screenshot image
+		d3.selectAll('.keyframe').remove()
+		d3.select('#imageContainer').append('img')
+			.attr('id', 'screenshot')
+			.attr('name', 'screenshot')
+
+		tooltip.html(apps[d.appid-1].name)
+			.style("left", (d3.event.pageX) + "px")
+			.style("top", (d3.event.pageY - 28) + "px")
+			.style("visibility", "visible");
+
+		// get image
+		var t = x.invert(d3.event.pageX)
+		var result = $.grep(images, function(e){ return e.time >= t; });
+		if (result.length >= 1){
+			$('#screenshot').attr("src", result[0].image)
+		}
+		else{
+			$('#screenshot').attr("src","")
+		}
+	}
+
+	function barMousemove(){
+		
+    //set x scale depending on if brushing is used
+		if (brush.empty()) {
+			var x = d3.scale.linear()
+			.domain([timeBegin, timeEnd])
+			.range([m[3],w]);
+		}
+		else {
+			var x = d3.scale.linear()
+			.domain([minExtent, maxExtent])
+			.range([0, w]);
+		}
+	
+		// move tooltip
+		tooltip.style("left", (d3.event.pageX) + "px")
+			.style("top", (d3.event.pageY - 28) + "px");
+
+		// update image
+		var t = x.invert(d3.event.pageX)
+		var result = $.grep(images, function(e){ return e.time >= t; });
+		if (result.length >= 1) {
+			$('#screenshot').attr("src", result[0].image)
+		}
+		else{
+			$('#screenshot').attr("src","")
+		}
+	}
+
+	function barMouseout(){
+		tooltip.style("visibility", "hidden");
+		d3.select('#screenshot').remove()
+		drawKeyframes();
+	}
 
 // -------------------------------------------------
 // redraws expanded based on brush
 // -------------------------------------------------
 	function updateBrushed(){
-		var minExtent = brush.extent()[0];
-		var maxExtent = brush.extent()[1];
+	 minExtent = brush.extent()[0];
+	 maxExtent = brush.extent()[1];
 
-		//scale for brushed timeline
-		var xb = d3.scale.linear()
-			.domain([minExtent, maxExtent])
-			.range([0, w]);
+	//LINEAR SCALE for number of apps 
+	var y = d3.scale.linear()
+	.domain([0, laneLength])
+	.range([0, laneLength * (barHeight + 2 * eBarPadding)]);
+	
+	var x = d3.scale.linear()
+	.domain([timeBegin, timeEnd])
+	.range([m[3],w]);
+	
+	//scale for brushed timeline
+	var xb = d3.scale.linear()
+		.domain([minExtent, maxExtent])
+		.range([0, w]);
 
-		//get new data based on brush extents
-		filteredApps = data['appevents'].filter(function (el) {
-			return (el.start <= maxExtent && el.start >= minExtent) ||
-				(el.end <= maxExtent && el.end >= minExtent);
-		});
-		console.log("numitems " + filteredApps.length);
+	//get new data based on brush extents
+	filteredApps = data['appevents'].filter(function (el) {
+		return (el.start <= maxExtent && el.start >= minExtent) ||
+			(el.end <= maxExtent && el.end >= minExtent);
+	});
+	//console.log("numitems " + filteredApps.length);
 
-		eTimeline.selectAll(".ebarContainer").remove(); //remove ebars
+	eTimeline.selectAll(".ebarContainer").remove(); //remove ebars
 
-		var ebars = eTimeline.append("g")
-			.attr("class","ebarContainer")
-			.selectAll(".ebar")
-			.data(filteredApps, function(d) {return d.id; });
+	var ebars = eTimeline.append("g")
+		.attr("class","ebarContainer")
+		.selectAll(".ebar")
+		.data(filteredApps, function(d) {return d.id; });
 
-		//draw the actual expanded timeline bars
-		ebars.enter().append("rect")
-			.attr("class","ebar")
-			.attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
+	//draw the actual expanded timeline bars
+	ebars.enter().append("rect")
+		.attr("class","ebar")
+		.attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
 		.attr("x", function(d) {return xb(d.start);})
-			.style("fill", function(d) {return timelineColors[d.appid % 12]})
-			// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
+		.style("fill", function(d) {return timelineColors[d.appid % 12]})
+		// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
 		.attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
-			.attr("height", barHeight)
-			.on("mouseover", function(d) {
-				tooltip.html(apps[d.appid-1].name)
-					.style("left", (d3.event.pageX) + "px")
-					.style("top", (d3.event.pageY - 28) + "px")
-					.style("visibility", "visible");
-				//get image
-				var t = x.invert(d3.event.pageX)
-				var result = $.grep(images, function(e){ return e.time >= t; });
-				if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-				else{$('#screenshot').attr("src","")}})
-			.on("mousemove", function(d) {
-				tooltip.style("left", (d3.event.pageX) + "px")
-					.style("top", (d3.event.pageY - 28) + "px");
-				var t = x.invert(d3.event.pageX)
-				var result = $.grep(images, function(e){ return e.time >= t; });
-				if (result.length >= 1) {$('#screenshot').attr("src", result[0].image)}
-				else{$('#screenshot').attr("src","")}})
-			.on("mouseout", function(d) {
-				tooltip.style("visibility", "hidden");
-				$('#screenshot').attr("src","")});
-
+		.attr("height", barHeight)		
+		.on("mouseover", function(d){ barMouseover(d); })
+		.on("mousemove", function(d){ barMousemove(); })
+		.on("mouseout", function(d){ barMouseout(); });
+		
 		//ebars.exit().remove();
 	}
 
