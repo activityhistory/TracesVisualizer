@@ -221,6 +221,13 @@ $(document).ready(function() {
 			drawExpanded();
 			drawKeywords();
 			drawKeyframes();
+			
+			
+		
+			
+			
+			
+			
 		});	//end d3.json
 	}	//end renderTimeline()
 
@@ -252,6 +259,68 @@ $(document).ready(function() {
 	                .selectAll("rect")
 	                .attr("y", 1)
 									.attr("height", barHeight - 1);
+	}
+
+
+// -------------------------------------------------
+// redraws expanded based on brush
+// -------------------------------------------------
+	function updateBrushed(){
+
+	 console.log("tryingtoupdate brush");
+	 minExtent = brush.extent()[0];
+	 maxExtent = brush.extent()[1];
+
+	//LINEAR SCALE for number of apps 
+	var y = d3.scale.linear()
+	.domain([0, laneLength])
+	.range([0, laneLength * (barHeight + 2 * eBarPadding)]);
+
+	var x = d3.scale.linear()
+	.domain([timeBegin, timeEnd])
+	.range([m[3],w]);
+
+	//scale for brushed timeline
+	var xb = d3.scale.linear()
+		.domain([minExtent, maxExtent])
+		.range([0, w]);
+
+	//get new data based on brush extents
+	filteredApps = data['appevents'].filter(function (el) {
+		return (el.start <= maxExtent && el.start >= minExtent) ||
+			(el.end <= maxExtent && el.end >= minExtent);
+	});
+	console.log("numitems " + filteredApps.length);
+
+	eTimeline.selectAll(".ebarContainer").remove(); //remove ebars
+
+	var ebars = eTimeline.append("g")
+		.attr("class","ebarContainer")
+		.selectAll(".ebar")
+		.data(filteredApps, function(d) {return d.id; });
+
+	//draw the actual expanded timeline bars
+	ebars.enter().append("rect")
+		.attr("class","ebar")
+		.attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
+		.attr("x", function(d) {return xb(d.start);})
+		.style("fill", function(d) {return timelineColors[d.appid % 12]})
+		// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
+		.attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
+		.attr("height", barHeight)		
+		.on("mouseover", function(d){ barMouseover(d); })
+		.on("mousemove", function(d){ barMousemove(); })
+		.on("mouseout", function(d){ barMouseout(); });
+
+		//ebars.exit().remove();
+	}
+
+// -------------------------------------------------
+// redraws expanded if brush is empty
+// -------------------------------------------------
+	function brushEnd(){
+		//if the brush is empty, redraw the timeline based on date
+		if (brush.empty()) renderTimeline();
 	}
 
 // -------------------------------------------------
@@ -547,65 +616,6 @@ $(document).ready(function() {
 		tooltip.style("visibility", "hidden");
 		d3.select('#screenshot').remove()
 		drawKeyframes();
-	}
-
-// -------------------------------------------------
-// redraws expanded based on brush
-// -------------------------------------------------
-	function updateBrushed(){
-	 minExtent = brush.extent()[0];
-	 maxExtent = brush.extent()[1];
-
-	//LINEAR SCALE for number of apps 
-	var y = d3.scale.linear()
-	.domain([0, laneLength])
-	.range([0, laneLength * (barHeight + 2 * eBarPadding)]);
-	
-	var x = d3.scale.linear()
-	.domain([timeBegin, timeEnd])
-	.range([m[3],w]);
-	
-	//scale for brushed timeline
-	var xb = d3.scale.linear()
-		.domain([minExtent, maxExtent])
-		.range([0, w]);
-
-	//get new data based on brush extents
-	filteredApps = data['appevents'].filter(function (el) {
-		return (el.start <= maxExtent && el.start >= minExtent) ||
-			(el.end <= maxExtent && el.end >= minExtent);
-	});
-	//console.log("numitems " + filteredApps.length);
-
-	eTimeline.selectAll(".ebarContainer").remove(); //remove ebars
-
-	var ebars = eTimeline.append("g")
-		.attr("class","ebarContainer")
-		.selectAll(".ebar")
-		.data(filteredApps, function(d) {return d.id; });
-
-	//draw the actual expanded timeline bars
-	ebars.enter().append("rect")
-		.attr("class","ebar")
-		.attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
-		.attr("x", function(d) {return xb(d.start);})
-		.style("fill", function(d) {return timelineColors[d.appid % 12]})
-		// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
-		.attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
-		.attr("height", barHeight)		
-		.on("mouseover", function(d){ barMouseover(d); })
-		.on("mousemove", function(d){ barMousemove(); })
-		.on("mouseout", function(d){ barMouseout(); });
-		
-		//ebars.exit().remove();
-	}
-
-// -------------------------------------------------
-// redraws expanded if brush is empty
-// -------------------------------------------------
-	function brushEnd(){
-		//if the brush is empty, redraw the timeline based on date
-		if (brush.empty()) renderTimeline();
 	}
 
 	function calculateActivity(filteredApps, timeBegin, timeEnd) {
