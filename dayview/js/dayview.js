@@ -58,19 +58,27 @@ $(document).ready(function() {
 		.attr("class", "tooltip");
 
 	// add jQuery datepicker
-	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(date){renderTimeline();} });
+	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(date){refresh();} });
 	$("#datepicker").datepicker("setDate", "0");
 
 
 	//DRAW ALL THE THINGS!
-	setupBrush();
+	// setupBrush();
 	renderTimeline();
 
+
+// -------------------------------------------------
+// all refresh that needs to happen on date change
+// -------------------------------------------------
+	function refresh(){
+		d3.selectAll(".brush").call(brush.clear());	
+		renderTimeline();
+	}
 // -------------------------------------------------
 // renders both timelines
 // -------------------------------------------------
 	function renderTimeline(){
-
+		setupBrush();
 		//get time again -- may have changed
 		selectedDate = $( "#datepicker" ).datepicker("getDate");
 		timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
@@ -100,6 +108,10 @@ $(document).ready(function() {
 				return (el.start <= timeEnd && el.start >= timeBegin) ||
 				(el.end <= timeEnd && el.end >= timeBegin);
 			});
+			console.log("day filtered: " + filteredApps.length);
+			console.log("timeBegin: " + timeBegin);
+			console.log("timeEnd: " + timeEnd);
+			console.log("----------");
 
 			// get a list of the apps used today, ordered by duration of use
 			var appActiveTime = function(ae){
@@ -223,11 +235,6 @@ $(document).ready(function() {
 			drawKeyframes();
 			
 			
-		
-			
-			
-			
-			
 		});	//end d3.json
 	}	//end renderTimeline()
 
@@ -254,7 +261,7 @@ $(document).ready(function() {
 		.on("brushend",brushEnd); //<-- on BRUSHEND, expanded redrawn to date frame if brush is empty
 	
 	  var area = main.append("g")
-	                .attr("class", "x brush")
+	                .attr("class", "brush")
 	                .call(brush)
 	                .selectAll("rect")
 	                .attr("y", 1)
@@ -267,9 +274,10 @@ $(document).ready(function() {
 // -------------------------------------------------
 	function updateBrushed(){
 
-	 console.log("tryingtoupdate brush");
+	 // console.log("tryingtoupdate brush");
 	 minExtent = brush.extent()[0];
 	 maxExtent = brush.extent()[1];
+
 
 	//LINEAR SCALE for number of apps 
 	var y = d3.scale.linear()
@@ -286,11 +294,17 @@ $(document).ready(function() {
 		.range([0, w]);
 
 	//get new data based on brush extents
-	filteredApps = data['appevents'].filter(function (el) {
+	filteredApps = items.filter(function (el) {
 		return (el.start <= maxExtent && el.start >= minExtent) ||
-			(el.end <= maxExtent && el.end >= minExtent);
+		(el.end <= maxExtent && el.end >= minExtent);
 	});
-	console.log("numitems " + filteredApps.length);
+	console.log(" ");
+	console.log("brush filtered: " + filteredApps.length);
+	console.log("timeBegin: " + timeBegin);
+	console.log("minExtentL " + Math.round(minExtent));
+	console.log("timeEnd: " + timeEnd);
+	console.log("maxExtent: " + Math.round(maxExtent));	
+	console.log("-----");
 
 	eTimeline.selectAll(".ebarContainer").remove(); //remove ebars
 
