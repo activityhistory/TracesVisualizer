@@ -3,7 +3,6 @@ $(document).ready(function() {
 // -------------------------------------------------
 // set constants
 // -------------------------------------------------
-
 	// set dimensions
 	var m = [12, 12, 12, 0]; //top right bottom left margins
 	var w = window.innerWidth - m[1] - m[3] - 4;
@@ -23,7 +22,6 @@ $(document).ready(function() {
 // -------------------------------------------------
 // draw containers
 // -------------------------------------------------
-
 	// main display svg
 	var main = d3.select("body")
 		.append("svg")
@@ -63,7 +61,6 @@ $(document).ready(function() {
 
 
 	//DRAW ALL THE THINGS!
-	// setupBrush();
 	renderTimeline();
 
 
@@ -71,14 +68,17 @@ $(document).ready(function() {
 // all refresh that needs to happen on date change
 // -------------------------------------------------
 	function refresh(){
-		d3.selectAll(".brush").call(brush.clear());	
-		renderTimeline();
+		d3.selectAll(".brush").remove();  //remove brush container
+		d3.selectAll(".brush").call(brush.clear());	 //reset svg brush
+		renderTimeline(); //now draw the things (again)
 	}
 // -------------------------------------------------
 // renders both timelines
 // -------------------------------------------------
 	function renderTimeline(){
+		
 		setupBrush();
+		
 		//get time again -- may have changed
 		selectedDate = $( "#datepicker" ).datepicker("getDate");
 		timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
@@ -247,7 +247,6 @@ $(document).ready(function() {
 		timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
 		timeEnd = timeBegin + 24*60*60; //show one day of data
 
-
 		//LINEAR TIME SCALE for selected day <-> page width
 		var x = d3.scale.linear()
 		.domain([timeBegin, timeEnd])
@@ -268,7 +267,6 @@ $(document).ready(function() {
 									.attr("height", barHeight - 1);
 	}
 
-
 // -------------------------------------------------
 // redraws expanded based on brush
 // -------------------------------------------------
@@ -277,7 +275,6 @@ $(document).ready(function() {
 	 // console.log("tryingtoupdate brush");
 	 minExtent = brush.extent()[0];
 	 maxExtent = brush.extent()[1];
-
 
 	//LINEAR SCALE for number of apps 
 	var y = d3.scale.linear()
@@ -365,6 +362,7 @@ $(document).ready(function() {
 			.style("text-anchor", "center")
 			.style("fill", "#666");
 	}
+
 // -------------------------------------------------
 // draw compressed timeline
 // -------------------------------------------------
@@ -517,9 +515,6 @@ $(document).ready(function() {
 		}
 	}
 
-// -------------------------------------------------
-// draw keywords
-// -------------------------------------------------
 	function drawKeyframes(){
 		numKeyframes = 12;
 		keyframeFiles = []
