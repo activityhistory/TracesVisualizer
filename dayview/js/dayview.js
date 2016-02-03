@@ -6,7 +6,7 @@ $(document).ready(function() {
 	// set dimensions
 	var m = [12, 12, 12, 0]; //top right bottom left margins
 	var w = window.innerWidth - m[1] - m[3] - 4;
-	var barHeight = 20;
+	var barHeight = 24;
 	var tickOffset = barHeight + 5
 	var cHeight = 42; //height of compressed timeline
 	var eHeight = 100; //height of expanded timeline
@@ -76,9 +76,9 @@ $(document).ready(function() {
 // renders both timelines
 // -------------------------------------------------
 	function renderTimeline(){
-		
+
 		setupBrush();
-		
+
 		//get time again -- may have changed
 		selectedDate = $( "#datepicker" ).datepicker("getDate");
 		timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
@@ -228,13 +228,13 @@ $(document).ready(function() {
 			}
 
 
-			drawAxis();		
+			drawAxis();
 			drawCompressed();
 			drawExpanded();
 			drawKeywords();
 			drawKeyframes();
-			
-			
+
+
 		});	//end d3.json
 	}	//end renderTimeline()
 
@@ -249,22 +249,22 @@ $(document).ready(function() {
 
 		//LINEAR TIME SCALE for selected day <-> page width
 		var x = d3.scale.linear()
-		.domain([timeBegin, timeEnd])
-		.range([m[3],w]);
+			.domain([timeBegin, timeEnd])
+			.range([m[3],w]);
 
-	  //svg brush elements
+	  	//svg brush elements
 		brush = d3.svg.brush()
-	  .x(x) //xscale of the brush is the x scale of the chart
-	  // .extent([timeBegin, timeEnd]) //extent is current time range
-		.on("brush", updateBrushed) //<--- on BRUSH event, only expanded timeline is redrawn
-		.on("brushend",brushEnd); //<-- on BRUSHEND, expanded redrawn to date frame if brush is empty
-	
+	  		.x(x) //xscale of the brush is the x scale of the chart
+	  		// .extent([timeBegin, timeEnd]) //extent is current time range
+			.on("brush", updateBrushed) //<--- on BRUSH event, only expanded timeline is redrawn
+			.on("brushend",brushEnd); //<-- on BRUSHEND, expanded redrawn to date frame if brush is empty
+
 	  var area = main.append("g")
 	                .attr("class", "brush")
 	                .call(brush)
 	                .selectAll("rect")
-	                .attr("y", 1)
-									.attr("height", barHeight - 1);
+	                .attr("y", 4)
+					.attr("height", barHeight + 2);
 	}
 
 // -------------------------------------------------
@@ -272,58 +272,58 @@ $(document).ready(function() {
 // -------------------------------------------------
 	function updateBrushed(){
 
-	 // console.log("tryingtoupdate brush");
-	 minExtent = brush.extent()[0];
-	 maxExtent = brush.extent()[1];
+		 // console.log("tryingtoupdate brush");
+		 minExtent = brush.extent()[0];
+		 maxExtent = brush.extent()[1];
 
-	//LINEAR SCALE for number of apps 
-	var y = d3.scale.linear()
-	.domain([0, laneLength])
-	.range([0, laneLength * (barHeight + 2 * eBarPadding)]);
+		//LINEAR SCALE for number of apps
+		var y = d3.scale.linear()
+		.domain([0, laneLength])
+		.range([0, laneLength * (barHeight + 2 * eBarPadding)]);
 
-	var x = d3.scale.linear()
-	.domain([timeBegin, timeEnd])
-	.range([m[3],w]);
+		var x = d3.scale.linear()
+		.domain([timeBegin, timeEnd])
+		.range([m[3],w]);
 
-	//scale for brushed timeline
-	var xb = d3.scale.linear()
-		.domain([minExtent, maxExtent])
-		.range([0, w]);
+		//scale for brushed timeline
+		var xb = d3.scale.linear()
+			.domain([minExtent, maxExtent])
+			.range([0, w]);
 
-	//get new data based on brush extents
-	filteredApps = items.filter(function (el) {
-		return (el.start <= maxExtent && el.start >= minExtent) ||
-		(el.end <= maxExtent && el.end >= minExtent);
-	});
-	console.log(" ");
-	console.log("brush filtered: " + filteredApps.length);
-	console.log("timeBegin: " + timeBegin);
-	console.log("minExtentL " + Math.round(minExtent));
-	console.log("timeEnd: " + timeEnd);
-	console.log("maxExtent: " + Math.round(maxExtent));	
-	console.log("-----");
+		//get new data based on brush extents
+		filteredApps = items.filter(function (el) {
+			return (el.start <= maxExtent && el.start >= minExtent) ||
+			(el.end <= maxExtent && el.end >= minExtent);
+		});
+		console.log(" ");
+		console.log("brush filtered: " + filteredApps.length);
+		console.log("timeBegin: " + timeBegin);
+		console.log("minExtentL " + Math.round(minExtent));
+		console.log("timeEnd: " + timeEnd);
+		console.log("maxExtent: " + Math.round(maxExtent));
+		console.log("-----");
 
-	eTimeline.selectAll(".ebarContainer").remove(); //remove ebars
+		eTimeline.selectAll(".ebarContainer").remove(); //remove ebars
 
-	var ebars = eTimeline.append("g")
-		.attr("class","ebarContainer")
-		.selectAll(".ebar")
-		.data(filteredApps, function(d) {return d.id; });
+		var ebars = eTimeline.append("g")
+			.attr("class","ebarContainer")
+			.selectAll(".ebar")
+			.data(filteredApps, function(d) {return d.id; });
 
-	//draw the actual expanded timeline bars
-	ebars.enter().append("rect")
-		.attr("class","ebar")
-		.attr("y", function(d) {return y(d.appid-1) + eBarPadding;})
-		.attr("x", function(d) {return xb(d.start);})
-		.style("fill", function(d) {return timelineColors[d.appid % 12]})
-		// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
-		.attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
-		.attr("height", barHeight)		
-		.on("mouseover", function(d){ barMouseover(d); })
-		.on("mousemove", function(d){ barMousemove(); })
-		.on("mouseout", function(d){ barMouseout(); });
+		//draw the actual expanded timeline bars
+		ebars.enter().append("rect")
+			.attr("class","ebar")
+			.attr("y", function(d) {return y(appTimesArray.findIndex(function(v){return v[0]==d.appid})) + eBarPadding;})
+			.attr("x", function(d) {return xb(d.start);})
+			.style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
+			// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
+			.attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
+			.attr("height", barHeight)
+			.on("mouseover", function(d){ barMouseover(d); })
+			.on("mousemove", function(d){ barMousemove(); })
+			.on("mouseout", function(d){ barMouseout(); });
 
-		//ebars.exit().remove();
+			//ebars.exit().remove();
 	}
 
 // -------------------------------------------------
@@ -331,7 +331,7 @@ $(document).ready(function() {
 // -------------------------------------------------
 	function brushEnd(){
 		//if the brush is empty, redraw the timeline based on date
-		if (brush.empty()) renderTimeline();
+		if(brush.empty()){ renderTimeline();}
 	}
 
 // -------------------------------------------------
@@ -357,7 +357,7 @@ $(document).ready(function() {
 			.attr("transform", "translate("+m[3]+"," + tickOffset + ")")
 			.call(xAxis)
 			.selectAll("text") //move text for tick marks
-			.attr("y", 8)
+			.attr("y", 12)
 			.attr("x", 0)
 			.style("text-anchor", "center")
 			.style("fill", "#666");
@@ -367,12 +367,12 @@ $(document).ready(function() {
 // draw compressed timeline
 // -------------------------------------------------
 	function drawCompressed(){
-		
+
 		//LINEAR TIME SCALE for selected day <-> page width
 		var x = d3.scale.linear()
 		.domain([timeBegin, timeEnd])
 		.range([m[3],w]);
-		
+
 		cTimeline.selectAll("g").remove(); //remove bars for redraw
 
 		abars = cTimeline.append("g").selectAll(".abar")
@@ -381,18 +381,18 @@ $(document).ready(function() {
 		abars.enter().append("rect")
 			.attr("class", function(d) {return "abar abar" + d.value})
 			.attr("x", function(d) {return x(d.start);})
-			.attr("y", -4)
+			.attr("y", barHeight + 3)
 			.attr("width", function(d) {return ( x(d.end) - x(d.start) - 1.5); }) //x = value of scaled(end) - scaled(start) - border width
-			.attr("height", 2)
+			.attr("height", 4)
 			.style("fill", function(d){return activityColors[d.value % 6]})
-			.style("fill-opacity", 0.2)
+			.style("fill-opacity", 1.0)
 			.style("stroke", function(d){return activityColors[d.value % 6]})
 			.style("stroke-width", 1.5)
 			.on("mouseover", function(d) {
 				d3.selectAll(".abar" + d.value).style("fill-opacity", 0.4);
 			})
 			.on("mouseout", function(d) {
-				d3.selectAll(".abar" + d.value).style("fill-opacity", 0.2);
+				d3.selectAll(".abar" + d.value).style("fill-opacity", 1.0);
 			});
 
 		abars.exit().remove();
@@ -423,7 +423,7 @@ $(document).ready(function() {
 		var x = d3.scale.linear()
 		.domain([timeBegin, timeEnd])
 		.range([m[3],w]);
-		
+
 
 		y = d3.scale.linear()
 			.domain([0, laneLength])
@@ -552,13 +552,10 @@ $(document).ready(function() {
 			});
 
 		keyframes.exit().remove()
-
-		//TODO add drawKeyframes on mouseout
 	}
 
 	function barMouseover(d){
-		
-    //set x scale depending on if brushing is used
+    	//set x scale depending on if brushing is used
 		if (brush.empty()) {
 			var x = d3.scale.linear()
 			.domain([timeBegin, timeEnd])
@@ -568,8 +565,8 @@ $(document).ready(function() {
 			var x = d3.scale.linear()
 			.domain([minExtent, maxExtent])
 			.range([0, w]);
-		}		
-		
+		}
+
 		// get divs ready for screenshot image
 		d3.selectAll('.keyframe').remove()
 		d3.select('#imageContainer').append('img')
@@ -593,8 +590,7 @@ $(document).ready(function() {
 	}
 
 	function barMousemove(){
-		
-    //set x scale depending on if brushing is used
+    	//set x scale depending on if brushing is used
 		if (brush.empty()) {
 			var x = d3.scale.linear()
 			.domain([timeBegin, timeEnd])
@@ -605,7 +601,7 @@ $(document).ready(function() {
 			.domain([minExtent, maxExtent])
 			.range([0, w]);
 		}
-	
+
 		// move tooltip
 		tooltip.style("left", (d3.event.pageX) + "px")
 			.style("top", (d3.event.pageY - 28) + "px");
