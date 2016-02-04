@@ -40,7 +40,6 @@ $(document).ready(function() {
 	var cTimelineBackground = cTimeline.append("rect")
 		.attr("x", m[3])
 		.attr("y", 0)
-		//.attr("height", barHeight)
 		.attr("width", w)
 		.attr('class', 'timelineBackground');
 
@@ -608,7 +607,9 @@ $(document).ready(function() {
 
 		// update image
 		var t = x.invert(d3.event.pageX)
-		var result = $.grep(images, function(e){ return e.time >= t; });
+		var result = $.grep(images, function(e){ return e.time >= t && e.time<=t+60.0; }); //get only 60s worth of images
+		console.log(t)
+		console.log(result)
 		if (result.length >= 1) {
 			$('#screenshot').attr("src", result[0].image)
 		}
