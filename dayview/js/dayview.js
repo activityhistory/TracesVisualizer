@@ -98,19 +98,22 @@ $(document).ready(function() {
 			data = json;
 			apps = data["apps"];
 			items = data["appevents"];
+			winEvents = data['windowevents'];
 			images = data['images'];
 			words = data['words'];
 			laneLength = apps.length;
 
 			// filter app data for the date
-			filteredApps = items.filter(function (el) {
+			filteredApps = winEvents.filter(function (el) {
 				return (el.start <= timeEnd && el.start >= timeBegin) ||
 				(el.end <= timeEnd && el.end >= timeBegin);
 			});
-			console.log("day filtered: " + filteredApps.length);
-			console.log("timeBegin: " + timeBegin);
-			console.log("timeEnd: " + timeEnd);
-			console.log("----------");
+			// console.log("day filtered: " + filteredApps.length);
+			// console.log("timeBegin: " + timeBegin);
+			// console.log("timeEnd: " + timeEnd);
+			// console.log("----------");
+
+			//TODO add urls
 
 			// get a list of the apps used today, ordered by duration of use
 			var appActiveTime = function(ae){

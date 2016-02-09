@@ -32,8 +32,10 @@ with con:
     data = []  #master data container
     apps = []  #list of apps
     windows = [] # list of windows
+    urls = []
     appevents = []  #list of application events
     windowevents = [] #list of window events
+    urlevents = []
     exps = []  #list of experiences
     images = [] #list of screenshots
     words = [] #list of keywords
@@ -43,8 +45,10 @@ with con:
     #SQL query strings
     appsSQL = "SELECT * FROM app"
     windowsSQL = "SELECT * FROM window"
+    urlSQL = "SELECT * FROM url"
     activeappSQL = "SELECT a.id, a.app_id, a.event, a.time as startt, min(b.time) AS endt FROM appevent a, appevent b WHERE a.app_id = b.app_id AND a.event = 'Active' AND b.event in ('Inactive', 'Close') AND a.time < b.time AND a.time IS NOT NULL AND b.time IS NOT NULL GROUP BY startt"
     activewindowSQL = "SELECT a.id, a.window_id, a.event, a.time as startt, min(b.time) AS endt FROM windowevent a, windowevent b WHERE a.window_id = b.window_id AND a.event = 'Active' AND b.event in ('Inactive', 'Close') AND a.time < b.time AND a.time IS NOT NULL AND b.time IS NOT NULL GROUP BY startt"
+    activeurlSQL = "SELECT a.id, a.url_id, a.app_id, a.window_id, a.event, a.time as startt, min(b.time) AS endt FROM urlevent a, urlevent b WHERE a.url_id = b.url_id AND a.window_id = b.window_id AND a.app_id = b.app_id AND a.event = 'Active' AND b.event in ('Inactive', 'Close') AND a.time < b.time AND a.time IS NOT NULL AND b.time IS NOT NULL GROUP BY startt"
     experienceSQL = "SELECT * FROM experience"
     wordsSQL = "SELECT * FROM keys"
 
@@ -68,6 +72,18 @@ with con:
         w['name'] = row[2]
         w['app'] = row[3]
         windows.append(w)
+
+    #GET list of urls
+    cur.execute(urlSQL)
+    rows = cur.fetchall()
+    for row in rows:
+        u = collections.OrderedDict()
+        u['id'] = row[0]
+        u['time'] = row[1]
+        u['title'] = row[2]
+        u['url'] = row[3]
+        u['host'] = row[4]
+        urls.append(u)
 
     #GET list intervals for primary application
     cur.execute(activeappSQL)
@@ -93,6 +109,20 @@ with con:
         w['start'] = row[3]
         w['end'] = row[4]
         windowevents.append(w)
+
+    #GET list intervals for urls
+    cur.execute(activeurlSQL)
+    rows = cur.fetchall()
+    for row in rows:
+        u = collections.OrderedDict()
+        u['id'] = row[0]
+        u['urlid'] = row[1]
+        u['appid'] = row[2]
+        u['windowid'] = row[3]
+        u['event'] = row[4]
+        u['start'] = row[5]
+        u['end'] = row[6]
+        urlevents.append(u)
 
     #GET list of experiences
     cur.execute(experienceSQL)
@@ -191,8 +221,10 @@ with con:
     d = collections.OrderedDict()
     d['apps']=apps
     d['window']=windows
+    d['url']=urls
     d['appevents']=appevents
     d['windowevents']=windowevents
+    d['urlevents']=urlevents
     d['exps']=exps
     d['images']=images
     d['words']=words
