@@ -62,12 +62,12 @@ with con:
     cur.execute(windowsSQL)
     rows = cur.fetchall()
     for row in rows:
-        a = collections.OrderedDict()
-        a['id'] = row[0]
-        a['time'] = row[1]
-        a['name'] = row[2]
-        a['app'] = row[3]
-        windows.append(a)
+        w = collections.OrderedDict()
+        w['id'] = row[0]
+        w['time'] = row[1]
+        w['name'] = row[2]
+        w['app'] = row[3]
+        windows.append(w)
 
     #GET list intervals for primary application
     cur.execute(activeappSQL)
@@ -88,6 +88,7 @@ with con:
         w = collections.OrderedDict()
         w['id'] = row[0]
         w['windowid'] = row[1]
+        w['appid'] = (item for item in windows if item["id"] == row[1]).next()['app']
         w['event'] = row[2]
         w['start'] = row[3]
         w['end'] = row[4]
