@@ -99,15 +99,24 @@ $(document).ready(function() {
 			apps = data["apps"];
 			items = data["appevents"];
 			winEvents = data['windowevents'];
+			urlEvents = data['urlevents']
 			images = data['images'];
 			words = data['words'];
 			laneLength = apps.length;
 
 			// filter app data for the date
-			filteredApps = winEvents.filter(function (el) {
+			filteredWins = winEvents.filter(function (el) {
 				return (el.start <= timeEnd && el.start >= timeBegin) ||
 				(el.end <= timeEnd && el.end >= timeBegin);
 			});
+
+			filteredUrls = urlEvents.filter(function (el) {
+				return (el.start <= timeEnd && el.start >= timeBegin) ||
+				(el.end <= timeEnd && el.end >= timeBegin);
+			});
+
+			filteredApps = filteredWins.concat(filteredUrls);
+
 			// console.log("day filtered: " + filteredApps.length);
 			// console.log("timeBegin: " + timeBegin);
 			// console.log("timeEnd: " + timeEnd);
