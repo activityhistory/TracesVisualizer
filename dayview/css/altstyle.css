@@ -1,0 +1,133 @@
+body{
+	font-family: 'helvetica neue', 'helvetica', sans-serif;
+	background-color: white;
+	padding-left: 0.5vw;
+	padding-right: 0.5vw;
+	padding-top: 0.5vh;
+  padding-bottom: 0.5vh;
+/*	background-color:black;*/
+}
+
+h1{
+	font-size: 2em;*/
+	font-weight: 300;
+}
+span.keyword{
+	margin-right: 10px;
+	float: left;
+}
+#header{
+	height:5vh;
+	width:98vw;
+/*	background-color:gray;*/
+}
+#datepicker{
+	box-sizing: border-box;
+	height:5vh;
+	width:14vw;
+	font-family: 'helvetica neue', 'helvetica', sans-serif;
+	font-size: 1.2em;
+	font-weight: 300;
+	padding-left:1vw;
+	background-color: white;
+	color: gray;
+	border-width: 1px;
+	border-color: #aaa;
+	border-style: solid;
+	float:left;
+}
+#stats{
+	height:5vh;
+	width:84vw;
+	float:right;
+/*	background-color:blue;*/
+}
+#stats p{
+	color: #666;
+	margin-top: 0em;
+	margin-bottom: 0.25em;
+	padding-left:1vw;
+}
+#dataContainer{
+	width:98vw;
+	height:50vh;
+/*	background-color:red;*/
+}
+#imageContainer{
+	float:left;
+	overflow: hidden;
+	width: 49vw;
+	height: 50vh;
+/*	background-color: green;*/
+	background-color: #ddd;
+}
+#detailsContainer{
+	float: right;
+	overflow: hidden;
+	width: 49vw;
+	height: 50vh;
+/*	background-color:teal;*/
+	background-color: #ddd;
+}
+
+svg{
+/*	background-color:black;*/
+	width:96vw;
+	height:40vh;
+	padding-left:1vw;
+	padding-right:1vw;
+}
+
+#screenshot{
+	max-width: 100%;
+	max-height: 100%;
+	display: block;
+	margin: auto;
+}
+
+#keywordParagraph{
+	margin: 0px;
+	line-height: 150%;
+}
+
+
+.axis text {
+	font: 12px sans-serif;
+	fill: black;
+}
+.axis line{
+	fill: none;
+	stroke: #999;
+	shape-rendering: crispEdges;
+}
+.axis path {
+	display: none;
+}
+.bar{
+	stroke-width: 1px;
+	shape-rendering: crispEdges;
+}
+.keyframe{
+	max-height: 180px;
+	padding: 10px 0px 0px 10px;
+}
+.timelineBackground{
+	fill: #ddd;
+	shape-rendering: crispEdges;
+}
+.tooltip{
+	padding: 4px;
+	position: absolute;
+	background-color: #CCC;
+	visibility:hidden;
+}
+.main{
+	margin-top: 10px;
+}
+.brush .extent {
+  stroke: #f00;
+  stroke-width: 2px;
+  fill: #f00;
+  fill-opacity: .25;
+  shape-rendering: crispEdges;
+}
