@@ -84,6 +84,7 @@ $(document).ready(function() {
 			// get the data that we will use today
 			apps = json["apps"];
 			windows = json["window"]
+			urls = json['url']
 			numApps = apps.length;
 			images = json['images'];
 
@@ -130,6 +131,37 @@ $(document).ready(function() {
 			(el.end <= end && el.end >= start);
 		});
 
+		//get most used windows
+		wHist = {}
+		for(i=0; i<filteredWins.length; i++){
+			var time_diff = filteredWins[i].end - filteredWins[i].start
+			if(time_diff > 0.0){
+				wHist[filteredWins[i].windowid] ? wHist[filteredWins[i].windowid]+=time_diff : wHist[filteredWins[i].windowid]=time_diff;
+			}
+		}
+
+		wArray = [];
+		for(var key in wHist){
+			wArray.push([wHist[key], key, windows[key-1].name]);
+		}
+		wArray.sort(function(a, b) {return b[0] - a[0]});
+
+		//get the most used urls
+		urlHist = {}
+		for(i=0; i<filteredUrls.length; i++){
+			var time_diff = filteredUrls[i].end - filteredUrls[i].start
+			if(time_diff > 0.0){
+				urlHist[filteredUrls[i].urlid] ? urlHist[filteredUrls[i].urlid]+=time_diff : urlHist[filteredUrls[i].urlid]=time_diff;
+			}
+		}
+
+		urlArray = [];
+		for(var key in urlHist){
+			urlArray.push([urlHist[key], key, urls[key-1].host, urls[key-1].url, urls[key-1].title]);
+		}
+		urlArray.sort(function(a, b) {return b[0] - a[0]});
+
+		//combine urls and windows to get duration of app use
 		filteredApps = filteredWins.concat(filteredUrls);
 
 		// get a list of the apps used today, ordered by duration of use
