@@ -311,6 +311,7 @@ $(document).ready(function() {
 		maxExtent = brush.extent()[1];
 
 		drawKeyframes(minExtent, maxExtent);
+		console.log("brush end")
 	}
 
 
@@ -398,9 +399,9 @@ $(document).ready(function() {
 			.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
 			.attr("height", barHeight)
 			.style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
-			.on("mouseover", function(d){ barMouseover(d); })
-			.on("mousemove", function(d){ barMousemove(); })
-			.on("mouseout", function(d){ barMouseout(); });
+			//.on("mouseover", function(d){ barMouseover(d); })
+			//.on("mousemove", function(d){ barMousemove(); })
+			//.on("mouseout", function(d){ barMouseout(); });
 
 		cbars.exit().remove();
 	}
@@ -601,8 +602,6 @@ $(document).ready(function() {
 		// update image
 		var t = x.invert(d3.event.pageX)
 		var result = $.grep(images, function(e){ return e.time >= t && e.time<=t+60.0; }); //get only 60s worth of images
-		console.log(t)
-		console.log(result)
 		if (result.length >= 1) {
 			$('#screenshot').attr("src", result[0].image)
 		}
@@ -614,7 +613,7 @@ $(document).ready(function() {
 	function barMouseout(){
 		tooltip.style("visibility", "hidden");
 		d3.select('#screenshot').remove()
-		drawKeyframes();
+		drawKeyframes(dayStart, dayEnd);
 	}
 
 
