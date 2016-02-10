@@ -83,27 +83,25 @@ $(document).ready(function() {
 
 			// get the data that we will use today
 			apps = json["apps"];
+			windows = json["window"]
 			numApps = apps.length;
 			images = json['images'];
+
+			words = getFilteredWords(dayStart, dayEnd, json['words']);
 
 			timelineData = getTimelineData(dayStart, dayEnd, json['windowevents'], json['urlevents']);
 			filteredApps = timelineData[0]
 			appTimesArray = timelineData[1]
 			appsByTime = timelineData[2]
 
-			wordData = getSortedWordcounts(dayStart, dayEnd, json['words'], numApps)
-			totalWordCount = wordData[0]
-			totalSortFreq = wordData[1]
-
-
 			// draw everything
 			drawAxis();
 			drawCompressed(x);
 			drawExpanded(x);
-			drawKeywords();
+			drawKeywords(dayStart, dayEnd, words, apps, windows);
 			drawKeyframes(dayStart, dayEnd);
 			setupBrush(x);
-			renderDayStats(filteredApps, totalWordCount);
+			renderDayStats(filteredApps, words.length);
 
 
 		});	//end d3.json
@@ -112,80 +110,12 @@ $(document).ready(function() {
 // -------------------------------------------------
 // data scraping
 // -------------------------------------------------
-	function getSortedWordcounts(start, end, text, numApps){
-		//100 most common english words
-		common = ['the','be','to','of','and','a','in','that','have','i',
-			'it','for','not','on','with','he','as','you','do','at','this',
-			'but','his','by','from','they','we','say','her','she','or','an',
-			'will','my','one','all','would','there','their','what','so',
-			'up','out','if','about','who','get','which','go','me','when',
-			'make','can','like','time','no','just','him','know','take',
-			'people','into','year','your','good','some','could','them',
-			'see','other','than','then','now','look','only','come','its',
-			'over','think','also','back','after','use','two','how','our',
-			'work','first','well','way','even','new','want','because','any',
-			'these','give','day','most','us']
-
-		// get only text typed in our time period
-		filteredText = text.filter(function (el) {
+	function getFilteredWords(start, end, words){
+		filteredText = words.filter(function (el) {
 			return (el.time <= end && el.time >= start);
 		});
 
-		// create big blobs of text for each app
-		textByApp = new Array(numApps).join(".").split(".");
-		for (i = 0; i < filteredText.length; i++) {
-			textByApp[filteredText[i].app] += (" " + filteredText[i].text)
-		}
-
-		//reusable word frequency function
-		var wordFreq = function(s){
-			var hist = {};
-			var words = s.split(/[\s*\.*\,\;\+?\#\|:\-\/\\\[\]\(\)\{\}$%&0-9*]/);
-			for(j=0; j<words.length; j++){
-				if(words[j].length>0){
-					hist[words[j]] ? hist[words[j]]+=1 : hist[words[j]]=1;
-				}
-			}
-			return hist;
-		};
-
-		//get word frequencies per app
-		freqByApp = new Array(numApps).join(".").split(".");
-		for(i = 0; i<textByApp.length; i++) {
-			freqByApp[i] = wordFreq(textByApp[i]);
-		}
-
-		//get total word count across all application before we remove the common english words
-		totalWordCount = 0
-		for(i = 0; i<freqByApp.length; i++) {
-			for(var key in freqByApp[i]){
-				totalWordCount += parseInt(freqByApp[i][key])
-			}
-		}
-
-		//get word freqencies in form we can use for d3 (i.e. an array instead of a Javascript object)
-		sortFreqByApp = new Array(numApps).join(".").split(".");
-		for(i=0; i<freqByApp.length; i++){
-			var sortFreq = [];
-			for(var word in freqByApp[i]){
-				sortFreq.push([word, freqByApp[i][word]])
-				sortFreq.sort(function(a, b) {return b[1] - a[1]})
-			}
-			sortFreqByApp[i] = sortFreq
-		}
-
-		//now throw all the freqs into a big array, regardless of the app
-		totalSortFreq = []
-		for(i=0; i<sortFreqByApp.length; i++){
-			for(j=0; j<sortFreqByApp[i].length; j++){
-				if($.inArray(sortFreqByApp[i][j][0], common) == -1){ //returns -1 if value not in the array
-					totalSortFreq.push([sortFreqByApp[i][j][0], sortFreqByApp[i][j][1], apps[i-1].id, apps[i-1].name])
-				}
-			}
-		}
-		totalSortFreq.sort(function(a, b) {return b[1] - a[1]})
-
-		return [totalWordCount, totalSortFreq]
+		return filteredText
 	}
 
 	function getTimelineData(start, end, windowevents, urlevents){
@@ -311,7 +241,8 @@ $(document).ready(function() {
 		maxExtent = brush.extent()[1];
 
 		drawKeyframes(minExtent, maxExtent);
-		console.log("brush end")
+		drawKeywords(minExtent, maxExtent, words);
+
 	}
 
 
@@ -462,11 +393,77 @@ $(document).ready(function() {
 	}
 
 	// draw keywords
-	function drawKeywords(){
-		countsOverOne = totalSortFreq.filter(function (el) { return (el[1] > 1);});
+	function drawKeywords(start, end, words, apps, windows){
+		//100 most common english words
+
+		common = ['the','be','to','of','and','a','in','that','have','i',
+			'it','for','not','on','with','he','as','you','do','at','this',
+			'but','his','by','from','they','we','say','her','she','or','an',
+			'will','my','one','all','would','there','their','what','so',
+			'up','out','if','about','who','get','which','go','me','when',
+			'make','can','like','time','no','just','him','know','take',
+			'people','into','year','your','good','some','could','them',
+			'see','other','than','then','now','look','only','come','its',
+			'over','think','also','back','after','use','two','how','our',
+			'work','first','well','way','even','new','want','because','any',
+			'these','give','day','most','us']
+
+		// get only words typed in our desired time period
+		filteredWords = words.filter(function (el) {
+			return (el.time <= end && el.time >= start);
+		});
+
+		// get a histogram of word freqencies by app and window
+		var wordFreqs = {};
+		for(i=0; i<filteredWords.length; i++){
+			t = filteredWords[i].text
+			a = filteredWords[i].app
+			w = filteredWords[i].window
+			time = filteredWords[i].time
+			// if the word has a length and is not in the list of common words
+			if(t.length>0 && $.inArray(t, common) == -1){
+				if(wordFreqs[t]){
+					if(wordFreqs[t][a]){
+						if(wordFreqs[t][a][w]){ wordFreqs[t][a][w].push(time) }
+						else{ wordFreqs[t][a][w] = [time]};
+					}
+					else{
+						object = {}
+						object[w] = [time]
+						wordFreqs[t][a] = object;
+					}
+				}
+				else{
+					topObject = {}
+					object = {}
+					object[w] = [time]
+					topObject[a] = object
+					wordFreqs[t] = topObject;
+				}
+			}
+		}
+
+		//convert into an array
+		wordFreqsArray = []
+		for(var w in wordFreqs){
+			for(var a in wordFreqs[w]){
+				for(var wi in wordFreqs[w][a]){
+					times = wordFreqs[w][a][wi]
+					wordFreqsArray.push([w, a, wi, times.length, times])
+				}
+			}
+		}
+
+		// filter for counts over one
+		countsOverOne = wordFreqsArray.filter(function (el) { return (el[3] > 1);});
+
+		//sort the array
+		countsOverOne.sort(function(a, b) {return b[3] - a[3]})
+
 		if(countsOverOne.length > 0){
+
 			textSize = d3.scale.log()
-				.domain([1, countsOverOne[0][1]])
+				.domain([2, countsOverOne[0][3]])
 				.range([12, 36]);
 
 			var keywords = d3.select('#keywordParagraph').selectAll('.keyword')
@@ -475,11 +472,14 @@ $(document).ready(function() {
 			keywords.enter().append('span')
 				.attr('class', 'keyword');
 
+
+
 			keywords.text(function(d) {return d[0];})
-				.style('color', function(d){return timelineColors[appTimesArray.findIndex(function(v){return v[0]==(d[2])}) % 12];})
-				.style('font-size', function(d){return String(parseInt(textSize(d[1]))) + "px"})
+				.style('color', function(d){return timelineColors[appTimesArray.findIndex(function(v){return v[0]==(d[1])}) % 12];})
+				.style('font-size', function(d){return String(parseInt(textSize(d[3]))) + "px"})
 				.on('mouseover', function(d){
-					tooltip.html(d[3] + ': ' + d[1])
+					console.log(windows.length)
+					tooltip.html(apps[d[1]-1].name + ": " + windows[d[2]-1].name)
 						.style("left", (d3.event.pageX) + "px")
 						.style("top", (d3.event.pageY - 28) + "px")
 						.style("visibility", "visible");
@@ -613,7 +613,13 @@ $(document).ready(function() {
 	function barMouseout(){
 		tooltip.style("visibility", "hidden");
 		d3.select('#screenshot').remove()
-		drawKeyframes(dayStart, dayEnd);
+		// decide what keyframes to draw based on whether brushing selected or not
+		if (brush.extent()[1] == dayStart){
+			drawKeyframes(dayStart, dayEnd);
+		}
+		else{
+			drawKeyframes(brush.extent()[0], brush.extent()[1]);
+		}
 	}
 
 

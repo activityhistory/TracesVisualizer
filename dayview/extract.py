@@ -163,7 +163,7 @@ with con:
 
     #GET keywords
     cmd_rows = []
-    new_line = ['Enter','Left','Right','Up','Down','Tab','Escape']
+    newWord = ['Enter','Left','Right','Up','Down','Tab','Escape', ' ']
     starttime = 0.0
     app = 0
     window = 0
@@ -175,31 +175,30 @@ with con:
         if 'Cmd' in row[3]:
             cmd_rows.append(row)
         else:
-            #keep writing the string if we're still on the same window
             text = str(row[2])
-            if int(row[5]) == window: # and float(row[1]) - time <= 300.0:
-                if text in new_line:
-                    s += ' '
-                elif text == 'Backspace':
+            # if its a char indicating a new word, save our text token
+            if text in newWord:
+                # save our data
+                if len(s) > 0:
+                    k = collections.OrderedDict()
+                    k['time'] = starttime #datetime.datetime.fromtimestamp(starttime).strftime("%H:%M %m/%d/%y")
+                    k['text'] = s #just pass the whole string for now
+                    k['app'] = app
+                    k['window'] = window
+                    words.append(k)
+
+                #reset tracking time
+                starttime = float(row[1])
+                s = ''
+
+            # if its a regular char on the same window, just keep building the string
+            elif int(row[5]) == window: # and float(row[1]) - time <= 300.0:
+                if text == 'Backspace':
                     s = s[:-1]
                 else:
                     s += row[2]
-
-            #if we've switched windows, look back at the frequent words
+            #else its a regular char but we switched windows, save the data
             else:
-                #don't get keywords for now. Just pass the entire string
-                # keywords = re.compile('\w+').findall(s.lower())
-                # c = collections.Counter(keywords)
-                #
-                # # 100 most common english words (not sure if written or spoken)
-                # common = ['the','be','to','of','and','a','in','that','have','i','it','for','not','on','with','he','as','you','do','at','this','but','his','by','from','they','we','say','her','she','or','an','will','my','one','all','would','there','their','what','so','up','out','if','about','who','get','which','go','me','when','make','can','like','time','no','just','him','know','take','people','into','year','your','good','some','could','them','see','other','than','then','now','look','only','come','its','over','think','also','back','after','use','two','how','our','work','first','well','way','even','new','want','because','any','these','give','day','most','us']
-                #
-                # # remove most common english words and get most frequent ones remaining
-                # for word in list(c):
-                #     if word in common:
-                #         del c[word]
-                # top = [w for w, count in c.most_common(10) if w not in common]
-
                 if len(s) > 0:
                     k = collections.OrderedDict()
                     k['time'] = starttime #datetime.datetime.fromtimestamp(starttime).strftime("%H:%M %m/%d/%y")
@@ -212,7 +211,9 @@ with con:
                 window = int(row[5])
                 app = int(row[4])
                 starttime = float(row[1])
-                if text in new_line or text == 'Backspace':
+
+                #write the character to start the next word
+                if text in newWord or text == 'Backspace':
                     s = ''
                 else:
                     s = row[2]
@@ -229,7 +230,6 @@ with con:
     d['images']=images
     d['words']=words
     data = d
-    #print json.dumps(data)
 
     #WRITE file
     file = 'extract.json'
