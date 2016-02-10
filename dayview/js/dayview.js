@@ -55,33 +55,22 @@ $(document).ready(function() {
 		.attr("class", "tooltip");
 
 	// add jQuery datepicker
-	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(date){refresh();} });
+	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(){refreshDayview();} });
 	$("#datepicker").datepicker("setDate", "0");
 
 
 	//DRAW ALL THE THINGS!
-	renderTimeline();
+	renderDayview();
 
-
-// -------------------------------------------------
-// all refresh that needs to happen on date change
-// -------------------------------------------------
-	function refresh(){
-		d3.selectAll(".brush").remove();  //remove brush container
-		d3.selectAll(".brush").call(brush.clear());	 //reset svg brush
-		renderTimeline(); //now draw the things (again)
-	}
 // -------------------------------------------------
 // renders both timelines
 // -------------------------------------------------
-	function renderTimeline(){
-
-		setupBrush();
+	function renderDayview(){
 
 		//get time again -- may have changed
 		selectedDate = $( "#datepicker" ).datepicker("getDate");
-		timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
-		timeEnd = timeBegin + 24*60*60; //show one day of data
+		dayStart = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
+		dayEnd = dayStart + 24*60*60; //show one day of data
 
 		//wrapper function for using json data to render SVG objects
 		d3.json("../extract.json", function(error, json){
@@ -89,212 +78,190 @@ $(document).ready(function() {
 
 			//not sure why this needs to be declared again - ARF investigating
 			var x = d3.scale.linear()
-				.domain([timeBegin, timeEnd])
+				.domain([dayStart, dayEnd])
 				.range([m[3],w]);
 
-		// -------------------------------------------------
-		// wrangle the data
-		// -------------------------------------------------
-			data = json;
-			apps = data["apps"];
-			items = data["appevents"];
-			winEvents = data['windowevents'];
-			urlEvents = data['urlevents']
-			images = data['images'];
-			words = data['words'];
-			laneLength = apps.length;
+			// get the data that we will use today
+			apps = json["apps"];
+			numApps = apps.length;
+			images = json['images'];
 
-			// filter app data for the date
-			filteredWins = winEvents.filter(function (el) {
-				return (el.start <= timeEnd && el.start >= timeBegin) ||
-				(el.end <= timeEnd && el.end >= timeBegin);
-			});
+			timelineData = getTimelineData(dayStart, dayEnd, json['windowevents'], json['urlevents']);
+			filteredApps = timelineData[0]
+			appTimesArray = timelineData[1]
+			appsByTime = timelineData[2]
 
-			filteredUrls = urlEvents.filter(function (el) {
-				return (el.start <= timeEnd && el.start >= timeBegin) ||
-				(el.end <= timeEnd && el.end >= timeBegin);
-			});
-
-			filteredApps = filteredWins.concat(filteredUrls);
-
-			// console.log("day filtered: " + filteredApps.length);
-			// console.log("timeBegin: " + timeBegin);
-			// console.log("timeEnd: " + timeEnd);
-			// console.log("----------");
-
-			//TODO add urls
-
-			// get a list of the apps used today, ordered by duration of use
-			var appActiveTime = function(ae){
-				var hist = {};
-				for(i=0; i<ae.length; i++){
-					var time_diff = ae[i].end - ae[i].start
-					if(time_diff > 0.0){
-						hist[ae[i].appid] ? hist[ae[i].appid]+=time_diff : hist[ae[i].appid]=time_diff;
-					}
-				}
-				return hist;
-			};
-
-			appTimes = appActiveTime(filteredApps)
-
-			appTimesArray = [];
-			for(var key in appTimes){
-				appTimesArray.push([key, apps[parseInt(key)-1].name, appTimes[key]]);
-			}
-			appTimesArray.sort(function(a, b) {return b[2] - a[2]});
-
-			eTimeline.attr('height', barHeight*appTimesArray.length)
-			main.attr("height", cHeight + barHeight*(appTimesArray.length+1) + m[0] + m[2])
-
-			// get most used applications in time slices
-			appsByTime = calculateActivity(filteredApps, timeBegin, timeEnd);
-
-			// get only text typed today
-			filteredWords = words.filter(function (el) {
-				return (el.time <= timeEnd && el.time >= timeBegin);
-			});
-
-			//get most used words by application
-			wordsByApp = new Array(apps.length).join(".").split(".");
-			for (i = 0; i < filteredWords.length; i++) {
-				wordsByApp[filteredWords[i].app] += (" " + filteredWords[i].text)
-			}
-
-			//reusable wordcount function
-			var wordcnt = function(s){
-				var hist = {};
-				var words = s.split(/[\s*\.*\,\;\+?\#\|:\-\/\\\[\]\(\)\{\}$%&0-9*]/);
-				for(j=0; j<words.length; j++){
-					if(words[j].length>0){
-						hist[words[j]] ? hist[words[j]]+=1 : hist[words[j]]=1;
-					}
-				}
-				return hist;
-			};
-
-			//get word frequencies per app
-			countsByApp = new Array(apps.length).join(".").split(".");
-			for(i = 0; i<wordsByApp.length; i++) {
-				countsByApp[i] = wordcnt(wordsByApp[i]);
-			}
-
-			//get total word count across all application
-			totalWordCount = 0
-			for(i = 0; i<countsByApp.length; i++) {
-				for(var key in countsByApp[i]){
-					totalWordCount += parseInt(countsByApp[i][key])
-				}
-			}
-
-			//get word freqencies in form we can use for d3 (i.e. an array instead of a Javascript object)
-			sortedCountsByApp = new Array(apps.length).join(".").split(".");
-			for(i=0; i<countsByApp.length; i++){
-				var sortedCounts = [];
-				for(var word in countsByApp[i]){
-					sortedCounts.push([word, countsByApp[i][word]])
-					sortedCounts.sort(function(a, b) {return b[1] - a[1]})
-				}
-				sortedCountsByApp[i] = sortedCounts
-			}
-
-			totalSortedCounts = []
-			//100 most common english words
-			common = ['the','be','to','of','and','a','in','that','have','i',
-				'it','for','not','on','with','he','as','you','do','at','this',
-				'but','his','by','from','they','we','say','her','she','or','an',
-				'will','my','one','all','would','there','their','what','so',
-				'up','out','if','about','who','get','which','go','me','when',
-				'make','can','like','time','no','just','him','know','take',
-				'people','into','year','your','good','some','could','them',
-				'see','other','than','then','now','look','only','come','its',
-				'over','think','also','back','after','use','two','how','our',
-				'work','first','well','way','even','new','want','because','any',
-				'these','give','day','most','us']
-			for(i=0; i<sortedCountsByApp.length; i++){
-				for(j=0; j<sortedCountsByApp[i].length; j++){
-					if($.inArray(sortedCountsByApp[i][j][0], common) == -1){ //returns -1 if value not in the array
-						totalSortedCounts.push([sortedCountsByApp[i][j][0], sortedCountsByApp[i][j][1], apps[i-1].id, apps[i-1].name])
-					}
-				}
-			}
-			totalSortedCounts.sort(function(a, b) {return b[1] - a[1]})
-
-			// -------------------------------------------------
-			//write summary data to the top of the page
-			// -------------------------------------------------
-			if(filteredApps.length == 0){
-				$('#stats').html("<p>You have no recordings for this date<\/p>")
-			}
-			else{
-				var recordedTime = 0.0
-				for (i = 0; i < filteredApps.length; i++) {
-					recordedTime += filteredApps[i].end - filteredApps[i].start
-				}
-				recordedTime = (recordedTime / 3600)
-				recordedTime = recordedTime.toFixed(1)
-				$('#stats').html(
-					"<p>" + recordedTime.toString() + " hours recorded<\/p>\
-					<p>" + totalWordCount + " words typed<\/p>")
-			}
+			wordData = getSortedWordcounts(dayStart, dayEnd, json['words'], numApps)
+			totalWordCount = wordData[0]
+			totalSortFreq = wordData[1]
 
 
+			// draw everything
 			drawAxis();
-			drawCompressed();
-			drawExpanded();
+			drawCompressed(x);
+			drawExpanded(x);
 			drawKeywords();
-			drawKeyframes();
+			drawKeyframes(dayStart, dayEnd);
+			setupBrush(x);
+			renderDayStats(filteredApps, totalWordCount);
 
 
 		});	//end d3.json
-	}	//end renderTimeline()
+	}	//end renderDayview()
 
 // -------------------------------------------------
-// setup brush elemetns
+// data scraping
 // -------------------------------------------------
-	function setupBrush(){
-		//get start and end time of the day we are viewing
-		selectedDate = $("#datepicker").datepicker("getDate");
-		timeBegin = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
-		timeEnd = timeBegin + 24*60*60; //show one day of data
+	function getSortedWordcounts(start, end, text, numApps){
+		//100 most common english words
+		common = ['the','be','to','of','and','a','in','that','have','i',
+			'it','for','not','on','with','he','as','you','do','at','this',
+			'but','his','by','from','they','we','say','her','she','or','an',
+			'will','my','one','all','would','there','their','what','so',
+			'up','out','if','about','who','get','which','go','me','when',
+			'make','can','like','time','no','just','him','know','take',
+			'people','into','year','your','good','some','could','them',
+			'see','other','than','then','now','look','only','come','its',
+			'over','think','also','back','after','use','two','how','our',
+			'work','first','well','way','even','new','want','because','any',
+			'these','give','day','most','us']
 
-		//LINEAR TIME SCALE for selected day <-> page width
-		var x = d3.scale.linear()
-			.domain([timeBegin, timeEnd])
-			.range([m[3],w]);
+		// get only text typed in our time period
+		filteredText = text.filter(function (el) {
+			return (el.time <= end && el.time >= start);
+		});
 
+		// create big blobs of text for each app
+		textByApp = new Array(numApps).join(".").split(".");
+		for (i = 0; i < filteredText.length; i++) {
+			textByApp[filteredText[i].app] += (" " + filteredText[i].text)
+		}
+
+		//reusable word frequency function
+		var wordFreq = function(s){
+			var hist = {};
+			var words = s.split(/[\s*\.*\,\;\+?\#\|:\-\/\\\[\]\(\)\{\}$%&0-9*]/);
+			for(j=0; j<words.length; j++){
+				if(words[j].length>0){
+					hist[words[j]] ? hist[words[j]]+=1 : hist[words[j]]=1;
+				}
+			}
+			return hist;
+		};
+
+		//get word frequencies per app
+		freqByApp = new Array(numApps).join(".").split(".");
+		for(i = 0; i<textByApp.length; i++) {
+			freqByApp[i] = wordFreq(textByApp[i]);
+		}
+
+		//get total word count across all application before we remove the common english words
+		totalWordCount = 0
+		for(i = 0; i<freqByApp.length; i++) {
+			for(var key in freqByApp[i]){
+				totalWordCount += parseInt(freqByApp[i][key])
+			}
+		}
+
+		//get word freqencies in form we can use for d3 (i.e. an array instead of a Javascript object)
+		sortFreqByApp = new Array(numApps).join(".").split(".");
+		for(i=0; i<freqByApp.length; i++){
+			var sortFreq = [];
+			for(var word in freqByApp[i]){
+				sortFreq.push([word, freqByApp[i][word]])
+				sortFreq.sort(function(a, b) {return b[1] - a[1]})
+			}
+			sortFreqByApp[i] = sortFreq
+		}
+
+		//now throw all the freqs into a big array, regardless of the app
+		totalSortFreq = []
+		for(i=0; i<sortFreqByApp.length; i++){
+			for(j=0; j<sortFreqByApp[i].length; j++){
+				if($.inArray(sortFreqByApp[i][j][0], common) == -1){ //returns -1 if value not in the array
+					totalSortFreq.push([sortFreqByApp[i][j][0], sortFreqByApp[i][j][1], apps[i-1].id, apps[i-1].name])
+				}
+			}
+		}
+		totalSortFreq.sort(function(a, b) {return b[1] - a[1]})
+
+		return [totalWordCount, totalSortFreq]
+	}
+
+	function getTimelineData(start, end, windowevents, urlevents){
+		// filter app data for the date
+		filteredWins = windowevents.filter(function (el) {
+			return (el.start <= end && el.start >= start) ||
+			(el.end <= end && el.end >= start);
+		});
+
+		filteredUrls = urlevents.filter(function (el) {
+			return (el.start <= end && el.start >= start) ||
+			(el.end <= end && el.end >= start);
+		});
+
+		filteredApps = filteredWins.concat(filteredUrls);
+
+		// get a list of the apps used today, ordered by duration of use
+		var appActiveTime = function(ae){
+			var hist = {};
+			for(i=0; i<ae.length; i++){
+				var time_diff = ae[i].end - ae[i].start
+				if(time_diff > 0.0){
+					hist[ae[i].appid] ? hist[ae[i].appid]+=time_diff : hist[ae[i].appid]=time_diff;
+				}
+			}
+			return hist;
+		};
+
+		appTimes = appActiveTime(filteredApps)
+
+		appTimesArray = [];
+		for(var key in appTimes){
+			appTimesArray.push([key, apps[parseInt(key)-1].name, appTimes[key]]);
+		}
+		appTimesArray.sort(function(a, b) {return b[2] - a[2]});
+
+		eTimeline.attr('height', barHeight*appTimesArray.length)
+		main.attr("height", cHeight + barHeight*(appTimesArray.length+1) + m[0] + m[2])
+
+		// get most used applications in time slices
+		appsByTime = calculateActivity(filteredApps, dayStart, dayEnd);
+
+		return [filteredApps, appTimesArray, appsByTime]
+	}
+
+
+// -------------------------------------------------
+// brush functions
+// -------------------------------------------------
+	// setup brush elemetns
+	function setupBrush(x){
 	  	//svg brush elements
 		brush = d3.svg.brush()
 	  		.x(x) //xscale of the brush is the x scale of the chart
-	  		// .extent([timeBegin, timeEnd]) //extent is current time range
-			.on("brush", updateBrushed) //<--- on BRUSH event, only expanded timeline is redrawn
+			.on("brush", function(){updateBrushed(x);}) //<--- on BRUSH event, only expanded timeline is redrawn
 			.on("brushend",brushEnd); //<-- on BRUSHEND, expanded redrawn to date frame if brush is empty
 
-	  var area = main.append("g")
-	                .attr("class", "brush")
-	                .call(brush)
-	                .selectAll("rect")
-	                .attr("y", 4)
-					.attr("height", barHeight + 2);
+	  	var area = main.append("g")
+	        .attr("class", "brush")
+	        .call(brush)
+	        .selectAll("rect")
+	        .attr("y", 4)
+			.attr("height", barHeight + 2);
 	}
 
-// -------------------------------------------------
-// redraws expanded based on brush
-// -------------------------------------------------
-	function updateBrushed(){
-
-		 // console.log("tryingtoupdate brush");
-		 minExtent = brush.extent()[0];
-		 maxExtent = brush.extent()[1];
+	// redraws expanded based on brush
+	function updateBrushed(x){
+		//get brush boundaries
+		minExtent = brush.extent()[0];
+		maxExtent = brush.extent()[1];
 
 		//LINEAR SCALE for number of apps
+		//TODO this scale works, but it too big, accounting for total num of apps, not just the apps used today
 		var y = d3.scale.linear()
-		.domain([0, laneLength])
-		.range([0, laneLength * (barHeight + 2 * eBarPadding)]);
-
-		var x = d3.scale.linear()
-		.domain([timeBegin, timeEnd])
-		.range([m[3],w]);
+			.domain([0, numApps])
+			.range([0, numApps * (barHeight + 2 * eBarPadding)]);
 
 		//scale for brushed timeline
 		var xb = d3.scale.linear()
@@ -302,24 +269,18 @@ $(document).ready(function() {
 			.range([0, w]);
 
 		//get new data based on brush extents
-		filteredApps = items.filter(function (el) {
+		brushApps = filteredApps.filter(function (el) {
 			return (el.start <= maxExtent && el.start >= minExtent) ||
 			(el.end <= maxExtent && el.end >= minExtent);
 		});
-		console.log(" ");
-		console.log("brush filtered: " + filteredApps.length);
-		console.log("timeBegin: " + timeBegin);
-		console.log("minExtentL " + Math.round(minExtent));
-		console.log("timeEnd: " + timeEnd);
-		console.log("maxExtent: " + Math.round(maxExtent));
-		console.log("-----");
 
+		//TODO this does not seem the most d3 way to do this data update
 		eTimeline.selectAll(".ebarContainer").remove(); //remove ebars
 
 		var ebars = eTimeline.append("g")
 			.attr("class","ebarContainer")
 			.selectAll(".ebar")
-			.data(filteredApps, function(d) {return d.id; });
+			.data(brushApps, function(d) {return d.id; });
 
 		//draw the actual expanded timeline bars
 		ebars.enter().append("rect")
@@ -327,7 +288,7 @@ $(document).ready(function() {
 			.attr("y", function(d) {return y(appTimesArray.findIndex(function(v){return v[0]==d.appid})) + eBarPadding;})
 			.attr("x", function(d) {return xb(d.start);})
 			.style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
-			// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
+			// .attr("width", function(d) {return x(dayStart + d.end - d.start);}) //from original
 			.attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
 			.attr("height", barHeight)
 			.on("mouseover", function(d){ barMouseover(d); })
@@ -335,30 +296,57 @@ $(document).ready(function() {
 			.on("mouseout", function(d){ barMouseout(); });
 
 			//ebars.exit().remove();
+
+		//TODO add keyframe filtering
+
 	}
 
-// -------------------------------------------------
-// redraws expanded if brush is empty
-// -------------------------------------------------
+	// redraws expanded if brush is empty
 	function brushEnd(){
 		//if the brush is empty, redraw the timeline based on date
-		if(brush.empty()){ renderTimeline();}
+		if(brush.empty()){ renderDayview();}
+
+		//get brush boundaries
+		minExtent = brush.extent()[0];
+		maxExtent = brush.extent()[1];
+
+		drawKeyframes(minExtent, maxExtent);
 	}
 
+
 // -------------------------------------------------
-//draw main timeline axis
+// timeline rendering functions
 // -------------------------------------------------
+	//write summary data to the top of the page
+	function renderDayStats(filteredApps, totalWordCount){
+		if(filteredApps.length == 0){
+			$('#stats').html("<p>You have no recordings for this date<\/p>")
+		}
+		else{
+			var recordedTime = 0.0
+			for (i = 0; i < filteredApps.length; i++) {
+				recordedTime += filteredApps[i].end - filteredApps[i].start
+			}
+			recordedTime = (recordedTime / 3600)
+			recordedTime = recordedTime.toFixed(1)
+			$('#stats').html(
+				"<p>" + recordedTime.toString() + " hours recorded<\/p>\
+				<p>" + totalWordCount + " words typed<\/p>")
+		}
+	}
+
+	//draw main timeline axis
 	function drawAxis(){
 		var t1 = selectedDate;
 		var t2 = new Date(t1.getTime());
 		t2.setDate(t2.getDate() + 1);
 
-		var xScale = d3.time.scale()
+		var xAxisScale = d3.time.scale()
 			.domain([t1, t2])
 			.range([m[3], w]);
 
 		var xAxis = d3.svg.axis()
-			.scale(xScale)
+			.scale(xAxisScale)
 			.orient("bottom");
 
 		d3.selectAll(".axis").remove(); //remove any existing axis
@@ -374,16 +362,8 @@ $(document).ready(function() {
 			.style("fill", "#666");
 	}
 
-// -------------------------------------------------
-// draw compressed timeline
-// -------------------------------------------------
-	function drawCompressed(){
-
-		//LINEAR TIME SCALE for selected day <-> page width
-		var x = d3.scale.linear()
-		.domain([timeBegin, timeEnd])
-		.range([m[3],w]);
-
+	// draw compressed timeline
+	function drawCompressed(x){
 		cTimeline.selectAll("g").remove(); //remove bars for redraw
 
 		abars = cTimeline.append("g").selectAll(".abar")
@@ -425,20 +405,11 @@ $(document).ready(function() {
 		cbars.exit().remove();
 	}
 
-// -------------------------------------------------
-//draw expanded timeline
-// -------------------------------------------------
-	function drawExpanded(){
-
-		//LINEAR TIME SCALE for selected day <-> page width
-		var x = d3.scale.linear()
-		.domain([timeBegin, timeEnd])
-		.range([m[3],w]);
-
-
+	//draw expanded timeline
+	function drawExpanded(x){
 		y = d3.scale.linear()
-			.domain([0, laneLength])
-			.range([0, laneLength * (barHeight + 2 * eBarPadding)]);
+			.domain([0, numApps])
+			.range([0, numApps * (barHeight + 2 * eBarPadding)]);
 
 		eTimeline.selectAll("g").remove(); //remove everything in eTimeline for redraw
 
@@ -465,7 +436,7 @@ $(document).ready(function() {
 			.attr("y", function(d) {return y(appTimesArray.findIndex(function(v){return v[0]==d.appid})) + eBarPadding;})
 			.attr("x", function(d) {return x(d.start);})
 			.style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
-				// .attr("width", function(d) {return x(timeBegin + d.end - d.start);}) //from original
+				// .attr("width", function(d) {return x(dayStart + d.end - d.start);}) //from original
 			.attr("width", function(d) {return ( x(d.end) - x(d.start)); }) //x = value of scaled(end) - scaled(start)
 			.attr("height", barHeight)
 			.on("mouseover", function(d){ barMouseover(d); })
@@ -489,11 +460,9 @@ $(document).ready(function() {
 			.attr("class", "laneText");
 	}
 
-// -------------------------------------------------
-// draw keywords
-// -------------------------------------------------
+	// draw keywords
 	function drawKeywords(){
-		countsOverOne = totalSortedCounts.filter(function (el) { return (el[1] > 1);});
+		countsOverOne = totalSortFreq.filter(function (el) { return (el[1] > 1);});
 		if(countsOverOne.length > 0){
 			textSize = d3.scale.log()
 				.domain([1, countsOverOne[0][1]])
@@ -526,10 +495,11 @@ $(document).ready(function() {
 		}
 	}
 
-	function drawKeyframes(){
+	//draw keyframes
+	function drawKeyframes(start, end){
 		numKeyframes = 12;
 		keyframeFiles = []
-		filteredImages = $.grep(images, function(e){ return e.time >= timeBegin && e.time <= timeEnd; });
+		filteredImages = $.grep(images, function(e){ return e.time >= start && e.time <= end; });
 		if(filteredImages.length < numKeyframes){
 			numKeyframes = filteredImages.length
 		}
@@ -565,11 +535,22 @@ $(document).ready(function() {
 		keyframes.exit().remove()
 	}
 
+	// update the dayview to the newly selected date. Called by the datepicker
+	function refreshDayview(){
+		d3.selectAll(".brush").remove();  //remove brush container
+		d3.selectAll(".brush").call(brush.clear());	 //reset svg brush
+		renderDayview(); //now draw the things (again)
+	}
+
+
+// -------------------------------------------------
+// mouseover functions
+// -------------------------------------------------
 	function barMouseover(d){
     	//set x scale depending on if brushing is used
 		if (brush.empty()) {
 			var x = d3.scale.linear()
-			.domain([timeBegin, timeEnd])
+			.domain([dayStart, dayEnd])
 			.range([m[3],w]);
 		}
 		else {
@@ -604,7 +585,7 @@ $(document).ready(function() {
     	//set x scale depending on if brushing is used
 		if (brush.empty()) {
 			var x = d3.scale.linear()
-			.domain([timeBegin, timeEnd])
+			.domain([dayStart, dayEnd])
 			.range([m[3],w]);
 		}
 		else {
@@ -636,10 +617,14 @@ $(document).ready(function() {
 		drawKeyframes();
 	}
 
-	function calculateActivity(filteredApps, timeBegin, timeEnd) {
+
+// -------------------------------------------------
+// activity recognition
+// -------------------------------------------------
+	function calculateActivity(filteredApps, dayStart, dayEnd) {
 		appsByTime = []
 		taskMap = {}
-		for (i = timeBegin; i <= timeEnd; i += 1800) {
+		for (i = dayStart; i <= dayEnd; i += 1800) {
 			temporalApps = filteredApps.filter(function(el) {
 				return el.start < i + 1800 && el.start > i;
 			});
@@ -673,4 +658,5 @@ $(document).ready(function() {
 		}
 		return -1;
 	}
+
 });	//end (document).ready()
