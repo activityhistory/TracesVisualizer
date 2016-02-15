@@ -154,7 +154,7 @@ $(document).ready(function() {
 		var x = d3.scale.linear()
 			.domain(dateRange)
       .range([m[3],w])
-      .clamp(1);   //turn on range clamping to prevent out of bounds for multiday events   
+      .clamp(1);   //range clamping to prevent out of bounds for multiday events   
           
      d3.json("../extract.json", function(error, json){
         if (error) return console.warn(error);
@@ -173,7 +173,7 @@ $(document).ready(function() {
 		       
           myBrush
             .x(x)
-            .on("brush", function(){updateBrushed(raw);}); //<--- on BRUSH event, only expanded timeline is redrawn
+            .on("brush", function(){updateBrushed(raw);}); 
            
           var brushArea = d3.select("svg")
             .append("g")
@@ -605,33 +605,6 @@ $(document).ready(function() {
 		}
 	}
   
-  	//draw moments [appevents] as circles 
-  //   function drawMoments(x,raw,dateRange){
-  //
-  //     var filteredApps = raw.filterApps(dateRange);
-  //
-  //     d3.selectAll(".mTimeline").remove();
-  //
-  //     var mTimeline = d3.select("svg").append("g")
-  //         .attr("class","mTimeline")
-  //         .selectAll("circle")
-  //         .data(filteredApps);
-  //
-  //     mTimeline.enter()
-  //       .append("circle")
-  //       .attr("cx", function(d) {return x(d.start);})
-  //       .attr("cy", 50)
-  //       .attr("r", 5)
-  //       .style("fill", function(d){return activityColors[d.appid % 6]})
-  //       .style("fill-opacity", 1.0)
-  //       .style("stroke", function(d){return activityColors[d.appid % 6]})
-  //       .style("stroke-width", 1.5)
-  //       .on("mouseover", function(d){ barMouseover(d); })
-  //       .on("mousemove", function(d){ barMousemove(); })
-  //       .on("mouseout", function(d){ barMouseout(); });
-  //
-  //     mTimeline.exit().remove();
-  //   }
 
 // -------------------------------------------------
 // mouseover functions
@@ -753,195 +726,6 @@ $(document).ready(function() {
 
 
 
-//------ORIGINAL DATA SCRAPING FUNCTIONS
-// -------------------------------------------------
-// data scraping
-// -------------------------------------------------
-  // function getFilteredWords(start, end, words){
-  //   filteredText = words.filter(function (el) {
-  //     return (el.time <= end && el.time >= start);
-  //   });
-  //
-  //   return filteredText
-  // }
-  //
-  // function getTimelineData(start,end,data){
-  //
-  //   // filter app data for the date
-  //   filteredWins = windowevents.filter(function (el) {
-  //     return (el.start <= end && el.start >= start) ||
-  //     (el.end <= end && el.end >= start);
-  //   });
-  //
-  //   filteredUrls = urlevents.filter(function (el) {
-  //     return (el.start <= end && el.start >= start) ||
-  //     (el.end <= end && el.end >= start);
-  //   });
-  //
-  //   //get most used windows
-  //   wHist = {}
-  //   for(i=0; i<filteredWins.length; i++){
-  //     var time_diff = filteredWins[i].end - filteredWins[i].start
-  //     if(time_diff > 0.0){
-  //       wHist[filteredWins[i].windowid] ? wHist[filteredWins[i].windowid]+=time_diff : wHist[filteredWins[i].windowid]=time_diff;
-  //     }
-  //   }
-  //
-  //   wArray = [];
-  //   for(var key in wHist){
-  //     wArray.push([wHist[key], key, windows[key-1].name]);
-  //   }
-  //   wArray.sort(function(a, b) {return b[0] - a[0]});
-  //
-  //   //get the most used urls
-  //   urlHist = {}
-  //   for(i=0; i<filteredUrls.length; i++){
-  //     var time_diff = filteredUrls[i].end - filteredUrls[i].start
-  //     if(time_diff > 0.0){
-  //       urlHist[filteredUrls[i].urlid] ? urlHist[filteredUrls[i].urlid]+=time_diff : urlHist[filteredUrls[i].urlid]=time_diff;
-  //     }
-  //   }
-  //
-  //   urlArray = [];
-  //   for(var key in urlHist){
-  //     urlArray.push([urlHist[key], key, urls[key-1].host, urls[key-1].url, urls[key-1].title]);
-  //   }
-  //   urlArray.sort(function(a, b) {return b[0] - a[0]});
-  //
-  //   //combine urls and windows to get duration of app use
-  //   filteredApps = filteredWins.concat(filteredUrls);
-  //
-  //   // get a list of the apps used today, ordered by duration of use
-  //   var appActiveTime = function(ae){
-  //     var hist = {};
-  //     for(i=0; i<ae.length; i++){
-  //       var time_diff = ae[i].end - ae[i].start
-  //       if(time_diff > 0.0){
-  //         hist[ae[i].appid] ? hist[ae[i].appid]+=time_diff : hist[ae[i].appid]=time_diff;
-  //       }
-  //     }
-  //     return hist;
-  //   };
-  //
-  //   appTimes = appActiveTime(filteredApps)
-  //
-  //   appTimesArray = [];
-  //   for(var key in appTimes){
-  //     appTimesArray.push([key, apps[parseInt(key)-1].name, appTimes[key]]);
-  //   }
-  //   appTimesArray.sort(function(a, b) {return b[2] - a[2]});
-  //
-  //   // eTimeline.attr('height', barHeight*appTimesArray.length)
-  //   main.attr("height", cHeight + barHeight*(appTimesArray.length+1) + m[0] + m[2])
-  //
-  //   // get most used applications in time slices
-  //   appsByTime = calculateActivity(filteredApps, dayStart, dayEnd);
-  //
-  //   return [filteredApps, appTimesArray, appsByTime]
-  // }
-  //
-  //---------ORIGINAL DATA HANDLING---------------------
-  //       numApps = apps.length;
-  //       windows = data["window"];
-  //       windowevents = data ["windowevents"];
-  //       urls = data["url"];
-  //       urlevents = data["urlevents"];
-  //       images = data["images"];
-  //       words = getFilteredWords(dateRange[0], dateRange[1], json["words"]);
-  //       timelineData = getTimelineData(dateRange[0], dateRange[1],data)
-  //       filteredApps = timelineData[0]
-  //       appTimesArray = timelineData[1]
-  //       appsByTime = timelineData[2]
-  
-  //--------OLD BRUSHING--------------------------------
- //function updateBrush
-  //   //get brush boundaries
-  //     minExtent = brush.extent()[0];
-  //     maxExtent = brush.extent()[1];
-  //
-  //   //LINEAR SCALE for number of apps
-  //   //TODO this scale works, but it too big, accounting for total num of apps, not just the apps used today
-  //   var y = d3.scale.linear()
-  //     .domain([0, raw.apps.length])
-  //     .range([0, raw.apps.length * (barHeight + 2 * eBarPadding)]);
-  //
-  //   //scale for brushed timeline
-  //   var xb = d3.scale.linear()
-  //     .domain([minExtent, maxExtent])
-  //     .range([0, w]);
-  //
-  //   //get new data based on brush extents
-  //     var filteredApps = raw.filterApps([minExtent,maxExtent]);
-  //   brushApps = filteredApps.filter(function (el) {
-  //     return (el.start <= maxExtent && el.start >= minExtent) ||
-  //     (el.end <= maxExtent && el.end >= minExtent);
-  //   });
-  //
-  //   //TODO this does not seem the most d3 way to do this data update
-  //   d3.select(".eTimeline").selectAll(".ebarContainer").remove(); //remove ebars
-  //
-  //   var ebars = d3.select("eTimeline").append("g")
-  //     .attr("class","ebarContainer")
-  //     .selectAll(".ebar")
-  //     .data(brushApps, function(d) {return d.id; });
-  //
-  //   //draw the actual expanded timeline bars
-  //   ebars.enter().append("rect")
-  //     .attr("class","ebar")
-  //     .attr("y", function(d) {return y(appTimesArray.findIndex(function(v){return v[0]==d.appid})) + eBarPadding;})
-  //     .attr("x", function(d) {return xb(d.start);})
-  //     .style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
-  //     // .attr("width", function(d) {return x(dayStart + d.end - d.start);}) //from original
-  //     .attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
-  //     .attr("height", barHeight)
-  //     .on("mouseover", function(d){ barMouseover(d,raw,x); })
-  //     .on("mousemove", function(d){ barMousemove(raw,x); })
-  //     .on("mouseout", function(d){ barMouseout(raw); });
-  //
-  //     //ebars.exit().remove();
-  //
-  //   //TODO add keyframe filtering
-  //
-  // }
-  //
-  // // redraws expanded if brush is empty
-  // function brushEnd(raw,brush){
-  //   //if the brush is empty, redraw the timeline based on date
-  //     if(brush.empty()){ render();}
-  //     // render();
-  //   //get brush boundaries
-  //     // minExtent = brush.extent()[0];
-  //     // maxExtent = brush.extent()[1];
-  //
-  //     // drawKeyframes(minExtent, maxExtent,raw);
-  //     // drawKeywords(minExtent, maxExtent, raw);
-  //
-  // }
-  //-----------OLD TIMELINE AXIS FUNCTION
-	//draw main timeline axis
-	// function drawAxis(){
-//     var t1 = selectedDate;
-//     var t2 = new Date(t1.getTime());
-//     t2.setDate(t2.getDate() + 1);
-//
-//     var xAxisScale = d3.time.scale()
-//       .domain([t1, t2])
-//       .range([m[3], w]);
-//
-//     var xAxis = d3.svg.axis()
-//       .scale(xAxisScale)
-//       .orient("bottom");
-//
-//     d3.selectAll(".axis").remove(); //remove any existing axis
-//
-//     main.append("g") //redraw the timeline axis
-//       .attr("class", "axis")
-//       .attr("transform", "translate("+0+"," + tickOffset + ")")
-//       .call(xAxis)
-//       .selectAll("text") //move text for tick marks
-//       .attr("y", 12)
-//       .attr("x", 0)
-//       .style("text-anchor", "center")
-//       .style("fill", "#666");
-//   }
+
+ 
   
