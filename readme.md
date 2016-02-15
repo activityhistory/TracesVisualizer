@@ -1,4 +1,4 @@
-![Dayview](https://raw.githubusercontent.com/activityhistory/TracesVisualizer/master/images/dayview_v3.png)
+![Dayview](https://raw.githubusercontent.com/activityhistory/TracesVisualizer/master/images/dayview_v4.png)
 
 This repository holds test code for visualizing Traces data using Javascript. To date, the most development effort has gone into developing a 'Dayview' to inspect the recorded data by day.
 
@@ -9,10 +9,7 @@ To run the Dayview:
  4. Navigate to http://localhost:8000/dayview.html
 
 This project is still in a rough state. Next steps include:
-* visualizing words types
-* show underlying timeline data on rollover
-* allow zooming on timeline
-* test that sqlite to JSON extraction pulls in all apps and all experiences
 
-We also have a number of known issues:
- 1. exports to file with extra layer of []
+* test that sqlite to JSON extraction pulls in all apps and all experiences
+* data validation
+* refinement of interface 
