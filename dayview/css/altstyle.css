@@ -1,11 +1,12 @@
 body{
 	font-family: 'helvetica neue', 'helvetica', sans-serif;
 	background-color: white;
-	padding-left: 0.5vw;
-	padding-right: 0.5vw;
-	padding-top: 0.5vh;
-  padding-bottom: 0.5vh;
+  padding-left: 1vw;
+  padding-right: 1vw;
+  padding-top: 1vh;
+  padding-bottom: 1vh;
 /*	background-color:black;*/
+
 }
 
 h1{
@@ -19,7 +20,8 @@ span.keyword{
 #header{
 	height:5vh;
 	width:98vw;
-/*	background-color:gray;*/
+  background-color:#d6d6d6;
+  padding:0;
 }
 #datepicker{
 	box-sizing: border-box;
@@ -28,54 +30,75 @@ span.keyword{
 	font-family: 'helvetica neue', 'helvetica', sans-serif;
 	font-size: 1.2em;
 	font-weight: 300;
-	padding-left:1vw;
+	padding-left:.5vw;
 	background-color: white;
 	color: gray;
-	border-width: 1px;
-	border-color: #aaa;
+	border-width: 2px;
+  border-radius: 5px;
+	border-color: gray;
 	border-style: solid;
 	float:left;
 }
 #stats{
 	height:5vh;
-	width:84vw;
-	float:right;
-/*	background-color:blue;*/
+	width:20vw;
+	float:left;
+/*  background-color:green;*/
 }
 #stats p{
 	color: #666;
 	margin-top: 0em;
 	margin-bottom: 0.25em;
 	padding-left:1vw;
+	padding-right:1vw;
+}
+#menu{
+	height:5vh;
+	float:left;
+/*  background-color:blue;*/
+}
+#leftBar{
+	float:left;
+	height:75vh;
+	width:2vw;
+/*  background-color:red;*/
+}
+#rightBar{
+	float:right;
+	height:75vh;
+	width:2vw;
+/*  background-color:red;*/
 }
 #dataContainer{
-	width:98vw;
+/*	width:98vw;*/
+  float:left;
+	width:92vw;
 	height:50vh;
-/*	background-color:red;*/
+/*  background-color:black;*/
 }
 #imageContainer{
 	float:left;
 	overflow: hidden;
-	width: 49vw;
+	width:45vw;
 	height: 50vh;
-/*	background-color: green;*/
-	background-color: #ddd;
+/*  background-color: teal;*/
 }
 #detailsContainer{
 	float: right;
 	overflow: hidden;
-	width: 49vw;
+	width:45vw;
 	height: 50vh;
-/*	background-color:teal;*/
-	background-color: #ddd;
+/*  background-color: #ddd;*/
 }
 
 svg{
-/*	background-color:black;*/
-	width:96vw;
-	height:40vh;
-	padding-left:1vw;
-	padding-right:1vw;
+/*  background-color:black;*/
+/*  position:fixed;*/
+	width:92vw;
+	height:20vh;
+	float:left;
+	padding-left:0vw;
+	padding-right:0vw;
 }
 
 #screenshot{
@@ -89,7 +112,6 @@ svg{
 	margin: 0px;
 	line-height: 150%;
 }
-
 
 .axis text {
 	font: 12px sans-serif;
@@ -125,9 +147,31 @@ svg{
 	margin-top: 10px;
 }
 .brush .extent {
-  stroke: #f00;
+  stroke: black;
   stroke-width: 2px;
-  fill: #f00;
+  fill: black;
   fill-opacity: .25;
   shape-rendering: crispEdges;
+}
+.btn {
+	font-family: 'helvetica neue', 'helvetica', sans-serif;
+	font-size: 1.2em;
+	font-weight: 300;
+	float:auto;
+  cursor: pointer;
+  border-radius: 5px;
+  text-decoration: none;
+  padding: 5px;
+  transition: .3s;
+  -webkit-transition: .3s;
+  -moz-transition: .3s;
+  -o-transition: .3s;
+  display: inline-block;
+  color: gray;
+  border: 2px gray solid;
+  background-color:white;
+}
+.btn:hover {
+  background-color:gray;
+  color:white;
 }
