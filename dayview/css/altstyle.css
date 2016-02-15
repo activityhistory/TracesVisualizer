@@ -96,7 +96,7 @@ svg{
 /*  background-color:black;*/
 /*  position:fixed;*/
 	width:92vw;
-	height:20vh;
+  height:40vh;
 	float:left;
 	padding-left:0vw;
 	padding-right:0vw;
@@ -119,13 +119,16 @@ svg{
 	fill: black;
 }
 .axis line{
-	fill: none;
+  fill: none;
 	stroke: #999;
 	shape-rendering: crispEdges;
 }
 .axis path {
-	display: none;
+  fill: none;
+	stroke: #999;
+	shape-rendering: crispEdges;
 }
+
 .bar{
 	stroke-width: 1px;
 	shape-rendering: crispEdges;
