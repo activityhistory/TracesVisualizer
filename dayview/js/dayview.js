@@ -1,14 +1,5 @@
 $(document).ready(function() {
-	$('#collapsed').click(function() {
-		render("collapsed");
-	});
-	$('#expanded').click(function() {
-		render("expanded");
-	});
-	$('#moments').click(function() {
-		render("moments");
-	});
-  
+	
   //JS object to hold the raw data + functions for filtering
   var fullData = function(data){  
     this.apps = data["apps"];
@@ -105,22 +96,23 @@ $(document).ready(function() {
 //TODO: extract brushing to toggle
 //TODO: change buttons to toggle
 
-// -------------------------------------------------
-// set constants
-// -------------------------------------------------
 	// set dimensions
 	var m = [10, 0, 0, 100]; //top right bottom left margins
   var svgWidth = $("svg").width();
+  var svgHeight = $("svg").height();
   var w =  svgWidth - m[1] ; //practical width of chart
 	var barHeight = 24;
-	var tickOffset = barHeight + 5
+	var tickOffset = 10;
 	var cHeight = 42; //height of compressed timeline
 	var eHeight = 100; //height of expanded timeline
 	var eBarPadding = 2;
 	var transitionTime = 1000; //duration of d3 transitions
-  var brush;
-	
-	// set colors
+  var startCompressed = svgHeight-(barHeight*2);
+  var startCompressedAxis = svgHeight-barHeight;
+  var startExpanded = 100;
+  var startExpandedAxis = 0;
+  
+  // set colors
   var timelineColors = ['#2F81AE','#A42510','#DE9D18','#256384','#C0400D',
               '#E1C020','#1C4766','#DD5C00','#96AC53','#132D45',
   '#DE7C0F','#599780'];
@@ -128,13 +120,10 @@ $(document).ready(function() {
   // var activityColors = ['#4394F7','#60B632','#EE7C15','#A24DDA','#F2CC20',
   //   '#E4454C'];
 
-
 	var activityColors = ['black','gray','black','gray','black','gray'];
 
-// -------------------------------------------------
-// draw containers
-// -------------------------------------------------
-	// main display svg
+  
+  // draw containers
 	var main = d3.select("svg")
 		.attr("class", "main");
 
@@ -143,205 +132,116 @@ $(document).ready(function() {
 		.attr("class", "tooltip");
 
 	// add jQuery datepicker
-	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(){render();} });
+	$("#datepicker").datepicker({dateFormat: "MM d, yy", onSelect: function(){refresh();} });
 	$("#datepicker").datepicker("setDate", "0");
 
+  var myBrush = d3.svg.brush();
+   
 	//DRAW ALL THE THINGS!
 	render();
 
-	function render(type) {
+  //get the date range from datepicker
+	function render(type,extent) {
 		
 		var dateRange = getDate();
-    // console.log(dateRange);
+    if (extent) //override date with brush extent
+    {
+      console.log("extent" +extent);
+      dateRange[0]= extent[0];
+      dateRange[1]= extent[1];
+    }
     
 		var x = d3.scale.linear()
 			.domain(dateRange)
       .range([m[3],w])
       .clamp(1);   //turn on range clamping to prevent out of bounds for multiday events   
-	  	 	
-    d3.json("../extract.json", function(error, json){
+          
+     d3.json("../extract.json", function(error, json){
         if (error) return console.warn(error);
 
         var data = json;
         var raw = new fullData(data);         
-        
-    switch(type){
-				case "collapsed":
-					console.log("render COLLAPSED");
-			    d3.selectAll("g").remove();
-      		drawAxis();
-	        drawCompressed(x,raw,dateRange);          
-					break;
-				case "expanded":
-					console.log("render EXPANDED");
-          d3.selectAll("g").remove();
-        	drawAxis();
-          drawExpanded(x,raw,dateRange);
-          break;
-				case "moments":
-					console.log("render MOMENTS");
-          d3.selectAll("g").remove();
-          drawAxis();
-					drawMoments(x,raw,dateRange);
-					break;
-				case "hide":
-					console.log("render HIDE");
-					brushing ^= true;
-					break;	
-				default:
-					console.log("render DEFAULT");
-					d3.selectAll("g").remove();
-        	drawAxis();
+           
+        if (raw.filterApps(dateRange).length > 0)//only draw if the date is not empty
+        {  
+          console.log("render DEFAULT");
+		    	d3.selectAll("g").remove();
 	        drawCompressed(x,raw,dateRange);
-          // setupBrush(x,raw);
           drawActivity(x,raw,dateRange);
           drawExpanded(x,raw,dateRange);
           // drawMoments(x,raw,dateRange);
-					break;
-			}//end switch	
-			
-      drawKeywords(dateRange, raw);
-      drawKeyframes(dateRange,raw);
-      renderDayStats(dateRange,raw);
-    });//end d3.json	
+		       
+          myBrush
+            .x(x)
+            .on("brush", function(){updateBrushed(raw);}); //<--- on BRUSH event, only expanded timeline is redrawn
+           
+          var brushArea = d3.select("svg")
+            .append("g")
+            .attr("class", "brush")        
+            .call(myBrush)
+            .selectAll("rect")
+            .attr("y", (svgHeight-(barHeight*2)))
+            .attr("height", barHeight + 2);
+        }
+        else {
+          d3.selectAll("g").remove();//remove all the gs... b/c it might be a date change
+        }
+          
+        drawKeywords(dateRange, raw);
+        drawKeyframes(dateRange,raw);
+        renderDayStats(dateRange,raw);
+     });//end d3.json	
 	}
 
-	// update the dayview to the newly selected date. Called by the datepicker
+	//clear the brush and redraw default based on newly selected date. 
 	function refresh(){
-		d3.selectAll(".brush").remove();  //remove brush container
-		d3.selectAll(".brush").call(brush.clear());	 //reset svg brush
+    console.log("refresh");
+		d3.selectAll("brush").call(myBrush.clear());	 //reset svg brush
 		render(); //now draw the things (again)
 	}
 	
 	//get the date range from datepicker
-	function getDate(x){
-		//get time again -- may have changed
-    
+	function getDate(){
 		selectedDate = $( "#datepicker" ).datepicker("getDate");
 		dayStart = Date.parse(selectedDate)/1000.0 //+ selectedDate.getTimezoneOffset()*60.0;
 		dayEnd = dayStart + 24*60*60; //show one day of data
-		return [dayStart,dayEnd];
+	 	return [dayStart,dayEnd];
 	}
-
 
 // -------------------------------------------------
 // brush functions
 // -------------------------------------------------
-	// setup brush elemetns
-	function setupBrush(x,raw){
-
-		brush = d3.svg.brush()
-			.x(x) //xscale of the brush is the x scale of the chart
-			.on("brush", function(){updateBrushed(x,raw);}) //<--- on BRUSH event, only expanded timeline is redrawn
-			.on("brushEnd",brushEnd(raw)); //<-- on BRUSHEND, expanded redrawn to date frame if brush is empty
-	  
-		var area = main.append("g")
-	    .attr("class", "brush")
-	    .call(brush)
-	    .selectAll("rect")
-	    .attr("y", 4)
-			.attr("height", barHeight + 2);			
-	}
-
-	// redraws expanded based on brush
-	function updateBrushed(x,raw){
-		
-    console.log("updatedBrushed");
-       
+  // redraws expanded based on brush
+  function updateBrushed(raw){
+    console.log("updateBrushed");
+   
     //get brush boundaries
-    minExtent = brush.extent()[0];
-    maxExtent = brush.extent()[1];
-
-		//LINEAR SCALE for number of apps
-		//TODO this scale works, but it too big, accounting for total num of apps, not just the apps used today
-		var y = d3.scale.linear()
-			.domain([0, raw.apps.length])
-			.range([0, raw.apps.length * (barHeight + 2 * eBarPadding)]);
-
-		//scale for brushed timeline
-		var xb = d3.scale.linear()
-			.domain([minExtent, maxExtent])
-			.range([0, w]);
-
-		//get new data based on brush extents
-    var filteredApps = raw.filterApps([minExtent,maxExtent]);
-		brushApps = filteredApps.filter(function (el) {
-			return (el.start <= maxExtent && el.start >= minExtent) ||
-			(el.end <= maxExtent && el.end >= minExtent);
-		});
-
-		//TODO this does not seem the most d3 way to do this data update
-		d3.select(".eTimeline").selectAll(".ebarContainer").remove(); //remove ebars
-
-		var ebars = d3.select("eTimeline").append("g")
-			.attr("class","ebarContainer")
-			.selectAll(".ebar")
-			.data(brushApps, function(d) {return d.id; });
-
-		//draw the actual expanded timeline bars
-		ebars.enter().append("rect")
-			.attr("class","ebar")
-			.attr("y", function(d) {return y(appTimesArray.findIndex(function(v){return v[0]==d.appid})) + eBarPadding;})
-			.attr("x", function(d) {return xb(d.start);})
-			.style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
-			// .attr("width", function(d) {return x(dayStart + d.end - d.start);}) //from original
-			.attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
-			.attr("height", barHeight)
-			.on("mouseover", function(d){ barMouseover(d,raw,x); })
-			.on("mousemove", function(d){ barMousemove(raw,x); })
-			.on("mouseout", function(d){ barMouseout(raw); });
-
-			//ebars.exit().remove();
-
-		//TODO add keyframe filtering
-
-	}
-
-	// redraws expanded if brush is empty
-	function brushEnd(raw){
-		//if the brush is empty, redraw the timeline based on date
-    if(brush.empty()){ render();}
-    // render();
-		//get brush boundaries
-    // minExtent = brush.extent()[0];
-    // maxExtent = brush.extent()[1];
-
-    // drawKeyframes(minExtent, maxExtent,raw);
-    // drawKeywords(minExtent, maxExtent, raw);
-
-	}
-
-
+    minExtent = myBrush.extent()[0];
+    maxExtent = myBrush.extent()[1];
+    
+    if (minExtent==maxExtent){
+      emptyDate= getDate();
+      minExtent = emptyDate[0];
+      maxExtent = emptyDate[1];
+    }
+  
+    var xb = d3.scale.linear()
+      .domain([minExtent, maxExtent])
+      .range([m[3],w])
+      .clamp(1);   //turn on range clamping to prevent out of bounds for multiday events    
+      
+    drawExpanded(xb,raw,[minExtent,maxExtent]); 
+    drawKeywords([minExtent,maxExtent], raw);
+    drawKeyframes([minExtent,maxExtent],raw);
+    renderDayStats([minExtent,maxExtent],raw);
+  }
+  
 // -------------------------------------------------
 // timeline rendering functions
 // -------------------------------------------------
-	//write summary data to the top of the page
-	function renderDayStats(dateRange,raw){
-		console.log("renderDayStats");
-    
-    filteredApps = raw.filterApps(dateRange);
-    totalWordCount = raw.filterWords(dateRange).length;
-    if(filteredApps.length == 0){
-			$('#stats').html("<p>You have no recordings for this date<\/p>")
-		}
-		else{
-			var recordedTime = 0.0
-			for (i = 0; i < filteredApps.length; i++) {
-				recordedTime += filteredApps[i].end - filteredApps[i].start
-			}
-			recordedTime = (recordedTime / 3600)
-			recordedTime = recordedTime.toFixed(1)
-			$('#stats').html(
-				"<p>" + recordedTime.toString() + " hours recorded<\/p>\
-				<p>" + totalWordCount + " words typed<\/p>")
-		}
-	}
-
-	//draw main timeline axis
-	function drawAxis(){
-		var t1 = selectedDate;
-		var t2 = new Date(t1.getTime());
-		t2.setDate(t2.getDate() + 1);
+	function drawAxis(type,starty,dateRange){
+		var t1 = new Date(dateRange[0]*1000);
+		var t2 = new Date(dateRange[1]*1000);
 
 		var xAxisScale = d3.time.scale()
 			.domain([t1, t2])
@@ -351,69 +251,31 @@ $(document).ready(function() {
 			.scale(xAxisScale)
 			.orient("bottom");
 
-		d3.selectAll(".axis").remove(); //remove any existing axis
-
-		main.append("g") //redraw the timeline axis
-			.attr("class", "axis")
-			.attr("transform", "translate("+0+"," + tickOffset + ")")
+    d3.selectAll(".e").remove();
+    var axes = d3.select("svg")
+      .append("g") //redraw the timeline axis
+      .attr("class", ""+type+"axis")
+			.attr("transform", "translate("+0+"," + starty + ")")
       .call(xAxis)
 			.selectAll("text") //move text for tick marks
-			.attr("y", 12)
+			.attr("y", tickOffset)
 			.attr("x", 0)
 			.style("text-anchor", "center")
 			.style("fill", "#666");
 	}
-	
-	//draw signifier of activity recognition
-	function drawActivity(x,raw,dateRange){
-    var appsTimes = raw.filterAppsByTime(dateRange);
-    // eTimeline.attr('height', barHeight*appTimesArray.length)
-    // main.attr("height", cHeight + barHeight*(appTimesArray.length+1) + m[0] + m[2])
-		console.log("drawActivity");
-    
-		//draw or re-draw timeline container
-    d3.selectAll(".aTimeline").remove();
-		
-		var aTimeline = d3.select("svg")
-			.append("g")
-      .attr("transform", "translate(" + 0 + ","+0+")")//start @ x = 0, y = 5
-  		.attr("width", w)
-			.attr("height", cHeight)
-			.attr("class", "aTimeline");
-		
-    var abars = aTimeline.selectAll(".abar")
-			.data(appsTimes);
-
-		abars.enter().append("rect")
-			.attr("class", function(d) {return "abar" + d.value})
-			.attr("x", function(d) {return x(d.start);})
-      // .attr("y", barHeight + 3) //below compressed
-      .attr("y", 0) //above compressed
-			.attr("width", function(d) {return ( x(d.end) - x(d.start) - 1.5); }) //x = value of scaled(end) - scaled(start) - border width
-			.attr("height", 4)
-			.style("fill", function(d){return activityColors[d.value % 6]})
-			.style("fill-opacity", 1.0)
-			.style("stroke", function(d){return activityColors[d.value % 6]})
-			.style("stroke-width", 1.5)
-			.on("mouseover", function(d) {
-					d3.selectAll(".abar" + d.value).style("fill-opacity", 0.4);
-				})
-			.on("mouseout", function(d) {
-					d3.selectAll(".abar" + d.value).style("fill-opacity", 1.0);
-				});
-
-		abars.exit().remove();	
-	}
-		
+ 	
 	// draw compressed timeline
 	function drawCompressed(x,raw,dateRange){			
-		console.log("drawCompressed");
-		//draw or re-draw timeline container
+		
+    console.log("drawCompressed");		
+    drawAxis("c ",startCompressedAxis,dateRange);
+    
+    //draw or re-draw timeline container
     d3.selectAll(".cTimeline").remove();
 		
 		var cTimeline = d3.select("svg")
 			.append("g")
-      .attr("transform", "translate(" + 0 + ",5)")//start @ x = 0, y = 5
+      .attr("transform", "translate(" + 0 + ","+startCompressed+")")//start @ x = 0, y = 5
 			.attr("width", w)
 			.attr("height", cHeight)
 			.attr("class", "cTimeline");
@@ -445,6 +307,9 @@ $(document).ready(function() {
 	//draw expanded timeline
 	function drawExpanded(x,raw,dateRange){
 		
+    console.log("drawExpanded");
+    drawAxis("e ",startExpandedAxis,dateRange);
+    
     var lanes = raw.apps.length;
     var filteredApps = raw.filterApps(dateRange)
     var appTimesArray = raw.filterAppTimes(dateRange);
@@ -523,34 +388,47 @@ $(document).ready(function() {
 	  ebars.exit().remove();
 	}
 
-	//draw moments [appevents] as circles 
-//   function drawMoments(x,raw,dateRange){
-//
-//     var filteredApps = raw.filterApps(dateRange);
-//
-//     d3.selectAll(".mTimeline").remove();
-//
-//     var mTimeline = d3.select("svg").append("g")
-//         .attr("class","mTimeline")
-//         .selectAll("circle")
-//         .data(filteredApps);
-//
-//     mTimeline.enter()
-//       .append("circle")
-//       .attr("cx", function(d) {return x(d.start);})
-//       .attr("cy", 50)
-//       .attr("r", 5)
-//       .style("fill", function(d){return activityColors[d.appid % 6]})
-//       .style("fill-opacity", 1.0)
-//       .style("stroke", function(d){return activityColors[d.appid % 6]})
-//       .style("stroke-width", 1.5)
-//       .on("mouseover", function(d){ barMouseover(d); })
-//       .on("mousemove", function(d){ barMousemove(); })
-//       .on("mouseout", function(d){ barMouseout(); });
-//
-//     mTimeline.exit().remove();
-//   }
+  //draw signifier of activity recognition
+  function drawActivity(x,raw,dateRange){
+  var appsTimes = raw.filterAppsByTime(dateRange);
+  // eTimeline.attr('height', barHeight*appTimesArray.length)
+  // main.attr("height", cHeight + barHeight*(appTimesArray.length+1) + m[0] + m[2])
+	console.log("drawActivity");
+  
+	//draw or re-draw timeline container
+  d3.selectAll(".aTimeline").remove();
 	
+	var aTimeline = d3.select("svg")
+		.append("g")
+    .attr("transform", "translate(" + 0 + ","+0+")")//start @ x = 0, y = 5
+		.attr("width", w)
+		.attr("height", cHeight)
+		.attr("class", "aTimeline");
+	
+  var abars = aTimeline.selectAll(".abar")
+		.data(appsTimes);
+
+	abars.enter().append("rect")
+		.attr("class", function(d) {return "abar" + d.value})
+		.attr("x", function(d) {return x(d.start);})
+    // .attr("y", barHeight + 3) //below compressed
+    .attr("y", 0) //above compressed
+		.attr("width", function(d) {return ( x(d.end) - x(d.start) - 1.5); }) //x = value of scaled(end) - scaled(start) - border width
+		.attr("height", 4)
+		.style("fill", function(d){return activityColors[d.value % 6]})
+		.style("fill-opacity", 1.0)
+		.style("stroke", function(d){return activityColors[d.value % 6]})
+		.style("stroke-width", 1.5)
+		.on("mouseover", function(d) {
+				d3.selectAll(".abar" + d.value).style("fill-opacity", 0.4);
+			})
+		.on("mouseout", function(d) {
+				d3.selectAll(".abar" + d.value).style("fill-opacity", 1.0);
+			});
+
+	abars.exit().remove();	
+}
+  
 	// draw keywords
 	function drawKeywords(dateRange, raw){
 		//100 most common english words
@@ -559,7 +437,7 @@ $(document).ready(function() {
     start = dateRange[0];
     end = dateRange[1];
     words = raw.filterWords(dateRange);
-    apps = raw.filterApps(dateRange)
+    apps = raw.apps;
     windows = raw.windows;
     appTimesArray = raw.filterAppTimes(dateRange);
 
@@ -644,7 +522,6 @@ $(document).ready(function() {
 				.style('color', function(d){return timelineColors[appTimesArray.findIndex(function(v){return v[0]==(d[1])}) % 12];})
 				.style('font-size', function(d){return String(parseInt(textSize(d[3]))) + "px"})
 				.on('mouseover', function(d){
-          // console.log(windows.length)
 					tooltip.html(apps[d[1]-1].name + ": " + windows[d[2]-1].name)
 						.style("left", (d3.event.pageX) + "px")
 						.style("top", (d3.event.pageY - 28) + "px")
@@ -706,6 +583,55 @@ $(document).ready(function() {
 		keyframes.exit().remove()
 	}
 
+	//write summary data to the top of the page
+	function renderDayStats(dateRange,raw){
+		console.log("renderDayStats");
+    
+    filteredApps = raw.filterApps(dateRange);
+    totalWordCount = raw.filterWords(dateRange).length;
+    if(filteredApps.length == 0){
+			$('#stats').html("<p>You have no recordings for this date<\/p>")
+		}
+		else{
+			var recordedTime = 0.0
+			for (i = 0; i < filteredApps.length; i++) {
+				recordedTime += filteredApps[i].end - filteredApps[i].start
+			}
+			recordedTime = (recordedTime / 3600)
+			recordedTime = recordedTime.toFixed(1)
+			$('#stats').html(
+				"<p>" + recordedTime.toString() + " hours recorded<\/p>\
+				<p>" + totalWordCount + " words typed<\/p>")
+		}
+	}
+  
+  	//draw moments [appevents] as circles 
+  //   function drawMoments(x,raw,dateRange){
+  //
+  //     var filteredApps = raw.filterApps(dateRange);
+  //
+  //     d3.selectAll(".mTimeline").remove();
+  //
+  //     var mTimeline = d3.select("svg").append("g")
+  //         .attr("class","mTimeline")
+  //         .selectAll("circle")
+  //         .data(filteredApps);
+  //
+  //     mTimeline.enter()
+  //       .append("circle")
+  //       .attr("cx", function(d) {return x(d.start);})
+  //       .attr("cy", 50)
+  //       .attr("r", 5)
+  //       .style("fill", function(d){return activityColors[d.appid % 6]})
+  //       .style("fill-opacity", 1.0)
+  //       .style("stroke", function(d){return activityColors[d.appid % 6]})
+  //       .style("stroke-width", 1.5)
+  //       .on("mouseover", function(d){ barMouseover(d); })
+  //       .on("mousemove", function(d){ barMousemove(); })
+  //       .on("mouseout", function(d){ barMouseout(); });
+  //
+  //     mTimeline.exit().remove();
+  //   }
 
 // -------------------------------------------------
 // mouseover functions
@@ -770,16 +696,16 @@ $(document).ready(function() {
     tooltip.style("visibility", "hidden");
 		d3.select('#screenshot').remove()
 		
-				// decide what keyframes to draw based on whether brushing selected or not
-    if(brush != null)
+		// decide what keyframes to draw based on whether brushing selected or not
+    if(myBrush != null)
     {
-        if (brush.extent()[1] != dayStart)
+        if (myBrush.extent()[1] != dayStart)
         {
-			   drawKeyframes(brush.extent()[0], brush.extent()[1], raw);
+			   drawKeyframes([myBrush.extent()[0], myBrush.extent()[1]], raw);
         }
-      }
+    }
     else     
-      {drawKeyframes(dateRange,raw);}
+    {drawKeyframes(dateRange,raw);}
 	}
 
 // -------------------------------------------------
@@ -927,4 +853,95 @@ $(document).ready(function() {
   //       appTimesArray = timelineData[1]
   //       appsByTime = timelineData[2]
   
+  //--------OLD BRUSHING--------------------------------
+ //function updateBrush
+  //   //get brush boundaries
+  //     minExtent = brush.extent()[0];
+  //     maxExtent = brush.extent()[1];
+  //
+  //   //LINEAR SCALE for number of apps
+  //   //TODO this scale works, but it too big, accounting for total num of apps, not just the apps used today
+  //   var y = d3.scale.linear()
+  //     .domain([0, raw.apps.length])
+  //     .range([0, raw.apps.length * (barHeight + 2 * eBarPadding)]);
+  //
+  //   //scale for brushed timeline
+  //   var xb = d3.scale.linear()
+  //     .domain([minExtent, maxExtent])
+  //     .range([0, w]);
+  //
+  //   //get new data based on brush extents
+  //     var filteredApps = raw.filterApps([minExtent,maxExtent]);
+  //   brushApps = filteredApps.filter(function (el) {
+  //     return (el.start <= maxExtent && el.start >= minExtent) ||
+  //     (el.end <= maxExtent && el.end >= minExtent);
+  //   });
+  //
+  //   //TODO this does not seem the most d3 way to do this data update
+  //   d3.select(".eTimeline").selectAll(".ebarContainer").remove(); //remove ebars
+  //
+  //   var ebars = d3.select("eTimeline").append("g")
+  //     .attr("class","ebarContainer")
+  //     .selectAll(".ebar")
+  //     .data(brushApps, function(d) {return d.id; });
+  //
+  //   //draw the actual expanded timeline bars
+  //   ebars.enter().append("rect")
+  //     .attr("class","ebar")
+  //     .attr("y", function(d) {return y(appTimesArray.findIndex(function(v){return v[0]==d.appid})) + eBarPadding;})
+  //     .attr("x", function(d) {return xb(d.start);})
+  //     .style("fill", function(d) {return timelineColors[appTimesArray.findIndex(function(v){return v[0]==d.appid}) % 12]})
+  //     // .attr("width", function(d) {return x(dayStart + d.end - d.start);}) //from original
+  //     .attr("width", function(d) {return ( xb(d.end) - xb(d.start)); }) //x = value of scaled(end) - scaled(start)
+  //     .attr("height", barHeight)
+  //     .on("mouseover", function(d){ barMouseover(d,raw,x); })
+  //     .on("mousemove", function(d){ barMousemove(raw,x); })
+  //     .on("mouseout", function(d){ barMouseout(raw); });
+  //
+  //     //ebars.exit().remove();
+  //
+  //   //TODO add keyframe filtering
+  //
+  // }
+  //
+  // // redraws expanded if brush is empty
+  // function brushEnd(raw,brush){
+  //   //if the brush is empty, redraw the timeline based on date
+  //     if(brush.empty()){ render();}
+  //     // render();
+  //   //get brush boundaries
+  //     // minExtent = brush.extent()[0];
+  //     // maxExtent = brush.extent()[1];
+  //
+  //     // drawKeyframes(minExtent, maxExtent,raw);
+  //     // drawKeywords(minExtent, maxExtent, raw);
+  //
+  // }
+  //-----------OLD TIMELINE AXIS FUNCTION
+	//draw main timeline axis
+	// function drawAxis(){
+//     var t1 = selectedDate;
+//     var t2 = new Date(t1.getTime());
+//     t2.setDate(t2.getDate() + 1);
+//
+//     var xAxisScale = d3.time.scale()
+//       .domain([t1, t2])
+//       .range([m[3], w]);
+//
+//     var xAxis = d3.svg.axis()
+//       .scale(xAxisScale)
+//       .orient("bottom");
+//
+//     d3.selectAll(".axis").remove(); //remove any existing axis
+//
+//     main.append("g") //redraw the timeline axis
+//       .attr("class", "axis")
+//       .attr("transform", "translate("+0+"," + tickOffset + ")")
+//       .call(xAxis)
+//       .selectAll("text") //move text for tick marks
+//       .attr("y", 12)
+//       .attr("x", 0)
+//       .style("text-anchor", "center")
+//       .style("fill", "#666");
+//   }
   
