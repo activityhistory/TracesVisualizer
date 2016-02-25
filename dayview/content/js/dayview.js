@@ -156,8 +156,7 @@ $(document).ready(function() {
       .range([m[3],w])
       .clamp(1);   //range clamping to prevent out of bounds for multiday events   
           
-     d3.json("../extract.json", function(error, json){
-        if (error) return console.warn(error);
+     $.get("extract", function(json){
 
         var data = json;
         var raw = new fullData(data);         

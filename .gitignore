@@ -1,5 +1,10 @@
 ### OSX ###
 .DS_Store
 
-dayview/screenshots
-dayview/extract.json
+### Dev-specific content ###
+dayview/content/screenshots
+dayview/node_modules/*
+
+### Data ###
+*extract.json
+*appCategories.json
