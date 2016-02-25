@@ -5,17 +5,17 @@ app.use(express.static('content'));
 var bodyParser = require('body-parser');
 var fs = require('fs');
 app.use(bodyParser.urlencoded({
-  extended: true
+    extended: true
 }));
 
 app.get('/', function(req, res) {
-  res.sendFile(__dirname + '/content/dayview.html');
+    res.sendFile(__dirname + '/content/dayview.html');
 });
 
 app.get('/extract', function(req, res) {
-  var jsonData = fs.readFileSync(__dirname + '/content/data/extract.json');
-  jsonData = JSON.parse(jsonData);
-  res.send(jsonData);
+    var jsonData = fs.readFileSync(__dirname + '/content/data/extract.json');
+    jsonData = JSON.parse(jsonData);
+    res.send(jsonData);
 });
 
 // for potential future use...
@@ -37,5 +37,5 @@ app.get('/extract', function(req, res) {
 // });
 
 http.listen(process.env.PORT || 8888, function(){
-  console.log('socket listening on *:8888');
+    console.log('socket listening on *:8888');
 });
